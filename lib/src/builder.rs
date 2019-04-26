@@ -10,35 +10,49 @@ pub struct RubyBuilder {
     version: Version,
     src_dir: PathBuf,
     out_dir: PathBuf,
-    configure: Command,
-    configure_path: PathBuf,
     autoconf: Command,
     force_autoconf: bool,
+    configure: Command,
+    configure_path: PathBuf,
+    force_configure: bool,
+    make: Command,
+    force_make: bool,
 }
 
 impl RubyBuilder {
     pub(crate) fn new(
         version: Version,
         src_dir: PathBuf,
-        out_dir: PathBuf
+        out_dir: PathBuf,
     ) -> Self {
         let configure_path = src_dir.join("configure");
 
         let mut configure = Command::new(&configure_path);
-        configure.current_dir(&src_dir);
+        configure.arg(format!("--prefix={}", out_dir.display()));
 
-        let mut autoconf = Command::new("autoconf");
-        autoconf.current_dir(&src_dir);
+        let mut make = Command::new("make");
+        make.arg("install");
+        make.env("PREFIX", &out_dir);
 
         RubyBuilder {
             version,
             src_dir,
             out_dir,
+            autoconf: Command::new("autoconf"),
+            force_autoconf: false,
             configure,
             configure_path,
-            autoconf,
-            force_autoconf: false,
+            force_configure: false,
+            make,
+            force_make: false,
         }
+    }
+
+    /// Run `autoconf`, even if `configure` already exists.
+    #[inline]
+    pub fn force_autoconf(mut self) -> Self {
+        self.force_autoconf = true;
+        self
     }
 
     /// Pass `args` into `autoconf` when generating `configure`.
@@ -73,10 +87,10 @@ impl RubyBuilder {
         self
     }
 
-    /// Run `autoconf`, even if `configure` already exists.
+    /// Run `configure`, even if `Makefile` already exists.
     #[inline]
-    pub fn force_autoconf(mut self) -> Self {
-        self.force_autoconf = true;
+    pub fn force_configure(mut self) -> Self {
+        self.force_configure = true;
         self
     }
 
@@ -112,31 +126,80 @@ impl RubyBuilder {
         self
     }
 
-    /// Performs all of the build steps for Ruby in one go.
+    /// Run `make`, even if `out_dir/bin/ruby` already exists.
+    #[inline]
+    pub fn force_make(mut self) -> Self {
+        self.force_make = true;
+        self
+    }
+
+    /// Pass `args` into `make install`.
+    #[inline]
+    pub fn make_args<I, S>(mut self, args: I) -> Self
+    where
+        I: IntoIterator<Item=S>,
+        S: AsRef<OsStr>,
+    {
+        self.make.args(args);
+        self
+    }
+
+    /// Sets the `stdin` handle of `make install`.
+    #[inline]
+    pub fn make_stdin<A: Into<Stdio>>(mut self, stdin: A) -> Self {
+        self.make.stdin(stdin);
+        self
+    }
+
+    /// Sets the `stdout` handle of `make install`.
+    #[inline]
+    pub fn make_stdout<A: Into<Stdio>>(mut self, stdout: A) -> Self {
+        self.make.stdout(stdout);
+        self
+    }
+
+    /// Sets the `stderr` handle of `make install`.
+    #[inline]
+    pub fn make_stderr<A: Into<Stdio>>(mut self, stderr: A) -> Self {
+        self.make.stderr(stderr);
+        self
+    }
+
+    /// Performs the required build steps for Ruby in one go.
     pub fn build(mut self) -> Result<Ruby, RubyBuildError> {
         use RubyBuildError::*;
 
-        if self.force_autoconf || !self.configure_path.exists() {
-            match self.autoconf.status() {
-                Ok(status) => if !status.success() {
-                    return Err(AutoconfFail(status));
-                },
-                Err(error) => {
-                    return Err(AutoconfSpawnFail(error));
-                },
-            }
+        macro_rules! phase {
+            ($cmd:ident, $cond:expr, $fail:ident, $spawn_fail:ident) => (
+                if $cond {
+                    match self.$cmd.current_dir(&self.src_dir).status() {
+                        Ok(status) => if !status.success() {
+                            return Err($fail(status));
+                        },
+                        Err(error) => {
+                            return Err($spawn_fail(error));
+                        },
+                    }
+                }
+            )
         }
 
-        match self.configure.status() {
-            Ok(status) => if !status.success() {
-                return Err(ConfigureFail(status));
-            },
-            Err(error) => {
-                return Err(ConfigureSpawnFail(error));
-            },
-        }
+        let run_autoconf = self.force_autoconf || !self.configure_path.exists();
+        phase!(autoconf, run_autoconf, AutoconfFail, AutoconfSpawnFail);
 
-        Ok(Ruby::new(self.version, self.src_dir, self.out_dir))
+        let run_configure = run_autoconf || self.force_configure || !self.src_dir.join("Makefile").exists();
+        phase!(configure, run_configure, ConfigureFail, ConfigureSpawnFail);
+
+        let bin_path = self.out_dir.join("bin").join("ruby");
+        let run_make = run_configure || self.force_make || !bin_path.exists();
+        phase!(make, run_make, MakeFail, MakeSpawnFail);
+
+        Ok(Ruby {
+            version: self.version,
+            src_dir: self.src_dir,
+            out_dir: self.out_dir,
+            bin_path,
+        })
     }
 }
 
@@ -155,4 +218,10 @@ pub enum RubyBuildError {
 
     /// `configure` exited unsuccessfully.
     ConfigureFail(ExitStatus),
+
+    /// Failed to spawn a process for `make`.
+    MakeSpawnFail(io::Error),
+
+    /// `make` exited unsuccessfully.
+    MakeFail(ExitStatus),
 }
