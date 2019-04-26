@@ -110,4 +110,40 @@ impl Ruby {
             .args(&["-e".as_ref(), ruby_script.as_ref()])
             .output()
     }
+
+    /// Returns the configuration value for `key`.
+    pub fn get_config(&self, key: impl Display) -> Result<String, RubyGetConfigError> {
+        let output = self.run(&format!("print RbConfig::CONFIG['{}']", key))?;
+        if output.status.success() {
+            Ok(String::from_utf8(output.stdout)?)
+        } else {
+            Err(RubyGetConfigError::RunFail(output))
+        }
+    }
+}
+
+/// The error returned when
+/// [`Ruby::get_config`](struct.Ruby.html#method.get_config) fails.
+#[derive(Debug)]
+pub enum RubyGetConfigError {
+    /// An IO error occurred when executing `ruby`.
+    Io(io::Error),
+    /// The `ruby` executable exited with a failure.
+    RunFail(Output),
+    /// The output of the config key is not encoded as UTF-8.
+    Utf8Error(FromUtf8Error),
+}
+
+impl From<io::Error> for RubyGetConfigError {
+    #[inline]
+    fn from(error: io::Error) -> Self {
+        RubyGetConfigError::Io(error)
+    }
+}
+
+impl From<FromUtf8Error> for RubyGetConfigError {
+    #[inline]
+    fn from(error: FromUtf8Error) -> Self {
+        RubyGetConfigError::Utf8Error(error)
+    }
 }
