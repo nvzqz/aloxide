@@ -11,3 +11,4 @@ path = "src/main.rs"
 
 [dependencies]
 aloxide = { path = "../lib" }
+clap = "2.33"
