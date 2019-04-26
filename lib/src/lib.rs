@@ -35,21 +35,19 @@ impl Ruby {
     /// Returns a new Ruby builder.
     #[inline]
     pub fn builder(
-        version: Version,
         src_dir: impl Into<PathBuf>,
         out_dir: impl Into<PathBuf>,
     ) -> RubyBuilder {
-        RubyBuilder::new(version, src_dir.into(), out_dir.into())
+        RubyBuilder::new(src_dir.into(), out_dir.into())
     }
 
     /// Builds Ruby with the default configuration.
     #[inline]
     pub fn build(
-        version: Version,
         src_dir: impl Into<PathBuf>,
         out_dir: impl Into<PathBuf>,
     ) -> Result<Self, RubyBuildError> {
-        Self::builder(version, src_dir, out_dir).build()
+        Self::builder(src_dir, out_dir).build()
     }
 
     /// Creates a new instance without doing anything.

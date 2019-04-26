@@ -3,11 +3,10 @@ use std::io;
 use std::path::PathBuf;
 use std::process::{Command, ExitStatus, Stdio};
 
-use crate::{Ruby, Version};
+use crate::{Ruby, Version, VersionParseError};
 
 /// Configures and builds Ruby.
 pub struct RubyBuilder {
-    version: Version,
     src_dir: PathBuf,
     out_dir: PathBuf,
     autoconf: Command,
@@ -21,7 +20,6 @@ pub struct RubyBuilder {
 
 impl RubyBuilder {
     pub(crate) fn new(
-        version: Version,
         src_dir: PathBuf,
         out_dir: PathBuf,
     ) -> Self {
@@ -35,7 +33,6 @@ impl RubyBuilder {
         make.env("PREFIX", &out_dir);
 
         RubyBuilder {
-            version,
             src_dir,
             out_dir,
             autoconf: Command::new("autoconf"),
@@ -194,8 +191,22 @@ impl RubyBuilder {
         let run_make = run_configure || self.force_make || !bin_path.exists();
         phase!(make, run_make, MakeFail, MakeSpawnFail);
 
+        let mut ruby_version = Command::new(&bin_path);
+        ruby_version.args(&["-e", "print RbConfig::CONFIG['RUBY_PROGRAM_VERSION']"]);
+
+        let version = match ruby_version.output() {
+            Ok(output) => match String::from_utf8(output.stdout) {
+                Ok(utf8) => match utf8.parse::<Version>() {
+                    Ok(version) => version,
+                    Err(error) => return Err(RubyVersionParseFail(error)),
+                },
+                Err(error) => return Err(RubyVersionUtf8Fail(error)),
+            },
+            Err(error) => return Err(RubySpawnFail(error)),
+        };
+
         Ok(Ruby {
-            version: self.version,
+            version,
             src_dir: self.src_dir,
             out_dir: self.out_dir,
             bin_path,
@@ -224,4 +235,13 @@ pub enum RubyBuildError {
 
     /// `make` exited unsuccessfully.
     MakeFail(ExitStatus),
+
+    /// Failed to spawn a process for `ruby`.
+    RubySpawnFail(io::Error),
+
+    /// Failed to parse the Ruby version as UTF-8.
+    RubyVersionUtf8Fail(std::string::FromUtf8Error),
+
+    /// Failed to parse the Ruby version as a `Version`.
+    RubyVersionParseFail(VersionParseError),
 }
