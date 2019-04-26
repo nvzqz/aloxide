@@ -129,11 +129,7 @@ impl RubyBuilder {
             },
         }
 
-        Ok(Ruby {
-            version: self.version,
-            src_dir: self.src_dir,
-            out_dir: self.out_dir,
-        })
+        Ok(Ruby::new(self.version, self.src_dir, self.out_dir))
     }
 }
 

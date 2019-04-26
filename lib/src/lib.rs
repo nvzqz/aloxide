@@ -25,6 +25,7 @@ pub struct Ruby {
     version: Version,
     src_dir: PathBuf,
     out_dir: PathBuf,
+    bin_path: PathBuf,
 }
 
 impl Ruby {
@@ -48,6 +49,19 @@ impl Ruby {
         Self::builder(version, src_dir, out_dir).build()
     }
 
+    /// Creates a new instance without doing anything.
+    #[inline]
+    pub fn new(
+        version: Version,
+        src_dir: impl Into<PathBuf>,
+        out_dir: impl Into<PathBuf>,
+    ) -> Ruby {
+        let src_dir = src_dir.into();
+        let out_dir = out_dir.into();
+        let bin_path = out_dir.join("bin").join("ruby");
+        Ruby { version, src_dir, out_dir, bin_path }
+    }
+
     /// Returns the Ruby version.
     #[inline]
     pub fn version(&self) -> Version {
@@ -64,6 +78,12 @@ impl Ruby {
     #[inline]
     pub fn out_dir(&self) -> &Path {
         &self.out_dir
+    }
+
+    /// The path of the `ruby` executable.
+    #[inline]
+    pub fn bin_path(&self) -> &Path {
+        &self.bin_path
     }
 
     /// Returns the output of `make` with `args`.
