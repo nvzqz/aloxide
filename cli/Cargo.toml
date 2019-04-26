@@ -1,0 +1,13 @@
+[package]
+name = "aloxide-cli"
+version = "0.1.0"
+authors = ["Nikolai Vazquez"]
+edition = "2018"
+publish = false
+
+[[bin]]
+name = "aloxide"
+path = "src/main.rs"
+
+[dependencies]
+aloxide = { path = "../lib" }

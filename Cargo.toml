@@ -1,5 +1,2 @@
-[package]
-name = "aloxide"
-version = "0.1.0"
-authors = ["Nikolai Vazquez"]
-edition = "2018"
+[workspace]
+members = ["cli", "lib"]
