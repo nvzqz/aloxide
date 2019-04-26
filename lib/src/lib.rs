@@ -5,9 +5,11 @@
 extern crate memchr;
 
 use std::ffi::OsStr;
+use std::fmt::Display;
 use std::io;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
+use std::string::FromUtf8Error;
 
 mod version;
 mod builder;
