@@ -10,9 +10,6 @@ pub struct RubyBuilder {
     version: Version,
     src_dir: PathBuf,
     out_dir: PathBuf,
-    download: bool,
-    overwrite_download: bool,
-    cache_download: bool,
     configure: Command,
     configure_path: PathBuf,
     autoconf: Command,
@@ -30,24 +27,11 @@ impl RubyBuilder {
             version,
             src_dir,
             out_dir,
-            download: false,
-            overwrite_download: false,
-            cache_download: false,
             configure: Command::new(&configure_path),
             configure_path,
             autoconf: Command::new("autoconf"),
             force_autoconf: false,
         }
-    }
-
-    /// Download Ruby over the internet if it doesn't exist or `overwrite` the
-    /// current download.
-    #[inline]
-    pub fn download(mut self, cache: bool, overwrite: bool) -> Self {
-        self.download = true;
-        self.cache_download = cache;
-        self.overwrite_download = overwrite;
-        self
     }
 
     /// Pass `args` into `autoconf` when generating `configure`.
@@ -124,10 +108,6 @@ impl RubyBuilder {
     /// Performs all of the build steps for Ruby in one go.
     pub fn build(mut self) -> Result<Ruby, RubyBuildError> {
         use RubyBuildError::*;
-
-        if self.download {
-            unimplemented!("TODO: Download Ruby's source to `src_dir`");
-        }
 
         if self.force_autoconf || !self.configure_path.exists() {
             match self.autoconf.current_dir(&self.src_dir).status() {
