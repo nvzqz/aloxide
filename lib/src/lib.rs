@@ -103,4 +103,11 @@ impl Ruby {
     pub fn check(&self) -> io::Result<Output> {
         self.make(&["check"])
     }
+
+    /// Executes `ruby_script` through the interpreter at `bin_path`.
+    pub fn run(&self, ruby_script: impl AsRef<OsStr>) -> io::Result<Output> {
+        Command::new(&self.bin_path)
+            .args(&["-e".as_ref(), ruby_script.as_ref()])
+            .output()
+    }
 }
