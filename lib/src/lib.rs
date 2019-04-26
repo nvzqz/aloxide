@@ -23,6 +23,7 @@ pub use self::{
 ///
 /// Ruby's sources are located in [`src_dir`](#method.src_dir) and its build
 /// output in [`out_dir`](#method.out_dir).
+#[derive(Debug)]
 pub struct Ruby {
     version: Version,
     src_dir: PathBuf,
