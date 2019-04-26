@@ -20,16 +20,12 @@ pub struct RubyBuilder {
 }
 
 impl RubyBuilder {
-    /// Creates a new builder for `version`.
-    pub fn new(
+    pub(crate) fn new(
         version: Version,
-        src_dir: impl Into<PathBuf>,
-        out_dir: impl Into<PathBuf>
+        src_dir: PathBuf,
+        out_dir: PathBuf
     ) -> Self {
-        let src_dir = src_dir.into();
-        let out_dir = out_dir.into();
         let configure_path = src_dir.join("configure");
-
         RubyBuilder {
             version,
             src_dir,

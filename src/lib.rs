@@ -33,7 +33,7 @@ impl Ruby {
         src_dir: impl Into<PathBuf>,
         out_dir: impl Into<PathBuf>,
     ) -> RubyBuilder {
-        RubyBuilder::new(version, src_dir, out_dir)
+        RubyBuilder::new(version, src_dir.into(), out_dir.into())
     }
 
     /// Builds Ruby with the default configuration.
