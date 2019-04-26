@@ -23,13 +23,20 @@ impl RubyBuilder {
         out_dir: PathBuf
     ) -> Self {
         let configure_path = src_dir.join("configure");
+
+        let mut configure = Command::new(&configure_path);
+        configure.current_dir(&src_dir);
+
+        let mut autoconf = Command::new("autoconf");
+        autoconf.current_dir(&src_dir);
+
         RubyBuilder {
             version,
             src_dir,
             out_dir,
-            configure: Command::new(&configure_path),
+            configure,
             configure_path,
-            autoconf: Command::new("autoconf"),
+            autoconf,
             force_autoconf: false,
         }
     }
@@ -110,7 +117,7 @@ impl RubyBuilder {
         use RubyBuildError::*;
 
         if self.force_autoconf || !self.configure_path.exists() {
-            match self.autoconf.current_dir(&self.src_dir).status() {
+            match self.autoconf.status() {
                 Ok(status) => if !status.success() {
                     return Err(AutoconfFail(status));
                 },
