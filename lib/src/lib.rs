@@ -2,6 +2,8 @@
 
 #![deny(missing_docs)]
 
+extern crate memchr;
+
 use std::ffi::OsStr;
 use std::io;
 use std::path::{Path, PathBuf};
@@ -12,7 +14,7 @@ mod builder;
 
 pub use self::{
     builder::*,
-    version::Version,
+    version::*,
 };
 
 /// An existing Ruby installation

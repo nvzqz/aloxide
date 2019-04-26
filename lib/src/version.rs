@@ -1,4 +1,7 @@
+use std::convert::TryFrom;
 use std::fmt;
+use std::num::ParseIntError;
+use std::str::FromStr;
 
 /// A simple Ruby version.
 #[derive(Clone, Copy, Debug)]
@@ -24,11 +27,36 @@ impl fmt::Display for Version {
     }
 }
 
+impl TryFrom<&str> for Version {
+    type Error = VersionParseError;
+
+    #[inline]
+    fn try_from(s: &str) -> Result<Self, Self::Error> {
+        Self::parser().parse(s)
+    }
+}
+
+impl FromStr for Version {
+    type Err = VersionParseError;
+
+    #[inline]
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Self::try_from(s)
+    }
+}
+
 impl Version {
     /// Creates a new instance from `major`, `minor`, and `teeny`.
     #[inline]
     pub fn new(major: u16, minor: u16, teeny: u16) -> Self {
         Version { major, minor, teeny }
+    }
+
+    /// Returns a parser that can be used to construct a `Version` out of a
+    /// string through various configurations.
+    #[inline]
+    pub fn parser() -> VersionParser {
+        VersionParser::default()
     }
 
     /// Returns an HTTPS URL for `self`.
@@ -41,4 +69,109 @@ impl Version {
             teeny = self.teeny,
         )
     }
+}
+
+/// A `Version` parser that be configured to varying levels of strictness.
+#[derive(Clone, Copy, Debug, Default)]
+pub struct VersionParser {
+    require_minor: bool,
+    require_teeny: bool,
+}
+
+impl VersionParser {
+    /// Creates a new instance.
+    #[inline]
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Sets whether `self` requires the minor version.
+    #[inline]
+    pub fn require_minor(&mut self, flag: bool) -> &mut Self {
+        self.require_minor = flag;
+        self
+    }
+
+    /// Sets whether `self` requires the minor and teeny versions.
+    #[inline]
+    pub fn require_minor_and_teeny(&mut self, flag: bool) -> &mut Self {
+        self.require_minor = flag;
+        self.require_teeny = flag;
+        self
+    }
+
+    /// Convert `s` into a `Version` based on the rules defined on `self`.
+    pub fn parse(&self, mut s: &str) -> Result<Version, VersionParseError> {
+        use VersionParseError::*;
+        use memchr::memchr;
+
+        fn split_at_dot(s: &str) -> (&str, Option<&str>) {
+            if let Some(index) = memchr(b'.', s.as_bytes()) {
+                (&s[..index], Some(&s[(index + 1)..]))
+            } else {
+                (s, None)
+            }
+        }
+
+        let major: u16 = match split_at_dot(s) {
+            (_, None) if self.require_minor => {
+                return Err(MinorMissing);
+            },
+            (start, Some(end)) => match start.parse() {
+                Ok(major) => {
+                    s = end;
+                    major
+                },
+                Err(error) => return Err(MajorInt(error)),
+            },
+            (remaining, None) => match remaining.parse() {
+                Ok(major) => {
+                    return Ok(Version { major, minor: 0, teeny: 0 });
+                },
+                Err(error) => return Err(MajorInt(error)),
+            }
+        };
+        let mut version = Version { major, minor: 0, teeny: 0 };
+
+        match split_at_dot(s) {
+            (_, None) if self.require_teeny => {
+                return Err(TeenyMissing);
+            },
+            (start, Some(end)) => match start.parse() {
+                Ok(minor) => {
+                    s = end;
+                    version.minor = minor;
+                },
+                Err(error) => return Err(MinorInt(error)),
+            },
+            (remaining, None) => match remaining.parse() {
+                Ok(minor) => {
+                    version.minor = minor;
+                },
+                Err(error) => return Err(MinorInt(error)),
+            }
+        }
+
+        match s.parse() {
+            Ok(teeny) => version.teeny = teeny,
+            Err(error) => return Err(TeenyInt(error)),
+        }
+
+        Ok(version)
+    }
+}
+
+/// The error returned when parsing a string into a `Version` fails.
+#[derive(Clone, Debug)]
+pub enum VersionParseError {
+    /// 'x.Y' missing.
+    MinorMissing,
+    /// 'x.y.Z' missing.
+    TeenyMissing,
+    /// Invalid 'X.y.z'.
+    MajorInt(ParseIntError),
+    /// Invalid 'x.Y.z'.
+    MinorInt(ParseIntError),
+    /// Invalid 'x.y.Z'.
+    TeenyInt(ParseIntError),
 }
