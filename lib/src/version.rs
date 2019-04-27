@@ -80,6 +80,17 @@ impl Version {
         VersionParser::default()
     }
 
+    /// Returns the name of the archive file corresponding to `self`.
+    #[inline]
+    pub fn archive_name(&self) -> String {
+        format!(
+            "ruby-{major}.{minor}.{teeny}.tar.bz2",
+            major = self.major,
+            minor = self.minor,
+            teeny = self.teeny,
+        )
+    }
+
     /// Returns an HTTPS URL for `self`.
     #[inline]
     pub fn url(&self) -> String {
