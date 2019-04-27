@@ -2,6 +2,7 @@
 
 #![deny(missing_docs)]
 
+extern crate dirs;
 extern crate memchr;
 
 use std::ffi::OsStr;
@@ -11,11 +12,14 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
 use std::string::FromUtf8Error;
 
-mod version;
 mod builder;
+mod downloader;
+mod util;
+mod version;
 
 pub use self::{
     builder::*,
+    downloader::*,
     version::*,
 };
 
@@ -32,6 +36,15 @@ pub struct Ruby {
 }
 
 impl Ruby {
+    /// Downloads and unpacks the source for `version` to `dst_dir`.
+    #[inline]
+    pub fn src_downloader<'a, P: AsRef<Path> + ?Sized>(
+        version: Version,
+        dst_dir: &'a P,
+    ) -> RubySrcDownloader<'a> {
+        RubySrcDownloader::new(version, dst_dir.as_ref())
+    }
+
     /// Returns a new Ruby builder.
     #[inline]
     pub fn builder(

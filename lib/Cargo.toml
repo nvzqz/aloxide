@@ -5,4 +5,5 @@ authors = ["Nikolai Vazquez"]
 edition = "2018"
 
 [dependencies]
+dirs = "1"
 memchr = "2"
