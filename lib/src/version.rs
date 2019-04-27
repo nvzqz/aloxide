@@ -85,18 +85,18 @@ impl VersionParser {
         Self::default()
     }
 
-    /// Sets whether `self` requires the minor version.
+    /// Sets `self` to require the minor version.
     #[inline]
-    pub fn require_minor(&mut self, flag: bool) -> &mut Self {
-        self.require_minor = flag;
+    pub fn require_minor(&mut self) -> &mut Self {
+        self.require_minor = true;
         self
     }
 
-    /// Sets whether `self` requires the minor and teeny versions.
+    /// Sets `self` to require the minor and teeny versions.
     #[inline]
-    pub fn require_minor_and_teeny(&mut self, flag: bool) -> &mut Self {
-        self.require_minor = flag;
-        self.require_teeny = flag;
+    pub fn require_minor_and_teeny(&mut self) -> &mut Self {
+        self.require_minor = true;
+        self.require_teeny = true;
         self
     }
 

@@ -47,7 +47,7 @@ fn main() {
 
 fn get_version(matches: &ArgMatches) -> Option<Result<Version, VersionParseError>> {
     let version = matches.value_of("version")?;
-    Some(Version::parser().require_minor(true).parse(version))
+    Some(Version::parser().require_minor().parse(version))
 }
 
 fn build_ruby(matches: &ArgMatches) {
