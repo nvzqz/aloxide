@@ -118,28 +118,34 @@ impl Ruby {
         self.make(&["check"])
     }
 
-    /// Executes `ruby_script` through the interpreter at `bin_path`.
-    pub fn run(&self, ruby_script: impl AsRef<OsStr>) -> io::Result<Output> {
-        Command::new(&self.bin_path)
-            .args(&["-e".as_ref(), ruby_script.as_ref()])
-            .output()
-    }
-
-    /// Returns the configuration value for `key`.
-    pub fn get_config(&self, key: impl Display) -> Result<String, RubyGetConfigError> {
-        let output = self.run(&format!("print RbConfig::CONFIG['{}']", key))?;
+    /// Executes the `ruby` binary at `bin_path` with `args`.
+    pub fn exec<I, S>(&self, args: I) -> Result<String, RubyExecError>
+    where
+        I: IntoIterator<Item=S>,
+        S: AsRef<OsStr>,
+    {
+        let output = Command::new(&self.bin_path).args(args).output()?;
         if output.status.success() {
             Ok(String::from_utf8(output.stdout)?)
         } else {
-            Err(RubyGetConfigError::RunFail(output))
+            Err(RubyExecError::RunFail(output))
         }
+    }
+
+    /// Runs `script` through the `ruby` interpreter at `bin_path`.
+    pub fn run(&self, script: impl AsRef<OsStr>) -> Result<String, RubyExecError> {
+        self.exec(&["-e".as_ref(), script.as_ref()])
+    }
+
+    /// Returns the configuration value for `key`.
+    pub fn get_config(&self, key: impl Display) -> Result<String, RubyExecError> {
+        self.run(&format!("print RbConfig::CONFIG['{}']", key))
     }
 }
 
-/// The error returned when
-/// [`Ruby::get_config`](struct.Ruby.html#method.get_config) fails.
+/// The error returned when running `ruby` fails.
 #[derive(Debug)]
-pub enum RubyGetConfigError {
+pub enum RubyExecError {
     /// An IO error occurred when executing `ruby`.
     Io(io::Error),
     /// The `ruby` executable exited with a failure.
@@ -148,16 +154,16 @@ pub enum RubyGetConfigError {
     Utf8Error(FromUtf8Error),
 }
 
-impl From<io::Error> for RubyGetConfigError {
+impl From<io::Error> for RubyExecError {
     #[inline]
     fn from(error: io::Error) -> Self {
-        RubyGetConfigError::Io(error)
+        RubyExecError::Io(error)
     }
 }
 
-impl From<FromUtf8Error> for RubyGetConfigError {
+impl From<FromUtf8Error> for RubyExecError {
     #[inline]
     fn from(error: FromUtf8Error) -> Self {
-        RubyGetConfigError::Utf8Error(error)
+        RubyExecError::Utf8Error(error)
     }
 }
