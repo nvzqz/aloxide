@@ -79,22 +79,22 @@ pub struct VersionParser {
 }
 
 impl VersionParser {
-    /// Creates a new instance.
+    /// Creates a new instance with optional minor and teeny versions.
     #[inline]
     pub fn new() -> Self {
         Self::default()
     }
 
-    /// Sets `self` to require the minor version.
+    /// Sets `self` to require `x.y`.
     #[inline]
     pub fn require_minor(&mut self) -> &mut Self {
         self.require_minor = true;
         self
     }
 
-    /// Sets `self` to require the minor and teeny versions.
+    /// Sets `self` to require `x.y.z`.
     #[inline]
-    pub fn require_minor_and_teeny(&mut self) -> &mut Self {
+    pub fn require_all(&mut self) -> &mut Self {
         self.require_minor = true;
         self.require_teeny = true;
         self
