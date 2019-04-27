@@ -63,6 +63,29 @@ impl RubyBuilder {
         self
     }
 
+    /// Pass the environment vars into `autoconf` when generating `configure`.
+    #[inline]
+    pub fn autoconf_envs<I, K, V>(mut self, envs: I) -> Self
+    where
+        I: IntoIterator<Item=(K, V)>,
+        K: AsRef<OsStr>,
+        V: AsRef<OsStr>,
+    {
+        self.autoconf.envs(envs);
+        self
+    }
+
+    /// Remove the environment vars for `autoconf` when generating `configure`.
+    #[inline]
+    pub fn autoconf_remove_envs<I, S>(mut self, envs: I) -> Self
+    where
+        I: IntoIterator<Item=S>,
+        S: AsRef<OsStr>,
+    {
+        for key in envs { self.autoconf.env_remove(key); }
+        self
+    }
+
     /// Sets the `stdin` handle of `autoconf`.
     #[inline]
     pub fn autoconf_stdin<A: Into<Stdio>>(mut self, stdin: A) -> Self {
@@ -91,7 +114,7 @@ impl RubyBuilder {
         self
     }
 
-    /// Pass `args` into the `configure` script.
+    /// Pass `args` into the `configure` script when generating `Makefile`.
     #[inline]
     pub fn configure_args<I, S>(mut self, args: I) -> Self
     where
@@ -99,6 +122,29 @@ impl RubyBuilder {
         S: AsRef<OsStr>,
     {
         self.configure.args(args);
+        self
+    }
+
+    /// Pass the environment vars into `configure` when generating `Makefile`.
+    #[inline]
+    pub fn configure_envs<I, K, V>(mut self, envs: I) -> Self
+    where
+        I: IntoIterator<Item=(K, V)>,
+        K: AsRef<OsStr>,
+        V: AsRef<OsStr>,
+    {
+        self.configure.envs(envs);
+        self
+    }
+
+    /// Remove the environment vars for `configure` when generating `Makefile`.
+    #[inline]
+    pub fn configure_remove_envs<I, S>(mut self, envs: I) -> Self
+    where
+        I: IntoIterator<Item=S>,
+        S: AsRef<OsStr>,
+    {
+        for key in envs { self.configure.env_remove(key); }
         self
     }
 
@@ -138,6 +184,29 @@ impl RubyBuilder {
         S: AsRef<OsStr>,
     {
         self.make.args(args);
+        self
+    }
+
+    /// Pass the environment vars into `make install`.
+    #[inline]
+    pub fn make_envs<I, K, V>(mut self, envs: I) -> Self
+    where
+        I: IntoIterator<Item=(K, V)>,
+        K: AsRef<OsStr>,
+        V: AsRef<OsStr>,
+    {
+        self.make.envs(envs);
+        self
+    }
+
+    /// Remove the environment vars for `make install`.
+    #[inline]
+    pub fn make_remove_envs<I, S>(mut self, envs: I) -> Self
+    where
+        I: IntoIterator<Item=S>,
+        S: AsRef<OsStr>,
+    {
+        for key in envs { self.make.env_remove(key); }
         self
     }
 
