@@ -289,28 +289,20 @@ impl RubyBuilder {
 pub enum RubyBuildError {
     /// Failed to spawn a process for `autoconf`.
     AutoconfSpawnFail(io::Error),
-
     /// `autoconf` exited unsuccessfully.
     AutoconfFail(ExitStatus),
-
     /// Failed to spawn a process for `configure`.
     ConfigureSpawnFail(io::Error),
-
     /// `configure` exited unsuccessfully.
     ConfigureFail(ExitStatus),
-
     /// Failed to spawn a process for `make`.
     MakeSpawnFail(io::Error),
-
     /// `make` exited unsuccessfully.
     MakeFail(ExitStatus),
-
     /// Failed to spawn a process for `ruby`.
     RubySpawnFail(io::Error),
-
     /// Failed to parse the Ruby version as UTF-8.
     RubyVersionUtf8Fail(std::string::FromUtf8Error),
-
     /// Failed to parse the Ruby version as a `Version`.
     RubyVersionParseFail(VersionParseError),
 }
