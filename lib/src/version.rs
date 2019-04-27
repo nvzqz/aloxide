@@ -21,6 +21,27 @@ impl From<(u16, u16, u16)> for Version {
     }
 }
 
+impl From<(u16, u16)> for Version {
+    #[inline]
+    fn from((major, minor): (u16, u16)) -> Self {
+        Version { major, minor, teeny: 0 }
+    }
+}
+
+impl From<(u16,)> for Version {
+    #[inline]
+    fn from((major,): (u16,)) -> Self {
+        major.into()
+    }
+}
+
+impl From<u16> for Version {
+    #[inline]
+    fn from(major: u16) -> Version {
+        Version { major, minor: 0, teeny: 0 }
+    }
+}
+
 impl fmt::Display for Version {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}.{}.{}", self.major, self.minor, self.teeny)
@@ -124,14 +145,14 @@ impl VersionParser {
                 },
                 Err(error) => return Err(MajorInt(error)),
             },
-            (remaining, None) => match remaining.parse() {
+            (remaining, None) => match remaining.parse::<u16>() {
                 Ok(major) => {
-                    return Ok(Version { major, minor: 0, teeny: 0 });
+                    return Ok(major.into());
                 },
                 Err(error) => return Err(MajorInt(error)),
             }
         };
-        let mut version = Version { major, minor: 0, teeny: 0 };
+        let mut version = Version::from(major);
 
         match split_at_dot(s) {
             (_, None) if self.require_teeny => {
