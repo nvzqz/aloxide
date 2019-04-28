@@ -12,14 +12,14 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
 use std::string::FromUtf8Error;
 
-mod builder;
-mod downloader;
+mod build;
+mod download;
 mod util;
 mod version;
 
 pub use self::{
-    builder::*,
-    downloader::*,
+    build::*,
+    download::*,
     version::*,
 };
 
