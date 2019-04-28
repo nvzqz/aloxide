@@ -82,6 +82,11 @@ impl Ruby {
         self.version
     }
 
+    /// Returns the result of executing `ruby -v`.
+    pub fn full_version(&self) -> Result<String, RubyExecError> {
+        self.exec(Some("-v"))
+    }
+
     /// The directory of Ruby's source code.
     #[inline]
     pub fn src_dir(&self) -> &Path {
