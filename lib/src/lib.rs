@@ -148,17 +148,37 @@ impl Ruby {
         I: IntoIterator<Item=S>,
         S: AsRef<OsStr>,
     {
-        let output = Command::new(&self.bin_path).args(args).output()?;
-        if output.status.success() {
-            Ok(String::from_utf8(output.stdout)?)
-        } else {
-            Err(RubyExecError::RunFail(output))
-        }
+        RubyExecError::process(Command::new(&self.bin_path).args(args))
     }
 
     /// Runs `script` through the `ruby` interpreter at `bin_path`.
     pub fn run(&self, script: impl AsRef<OsStr>) -> Result<String, RubyExecError> {
         self.exec(&["-e".as_ref(), script.as_ref()])
+    }
+
+    /// Runs multiple scripts through the `ruby` interpreter at `bin_path`
+    /// separate from one another and returns their concatenated outputs.
+    ///
+    /// This is the same as doing:
+    ///
+    /// ```sh
+    /// ruby -e $script1 -e $script2 -e $script3 ...
+    /// ```
+    pub fn run_multiple<I, S>(&self, scripts: I) -> Result<String, RubyExecError>
+    where
+        I: IntoIterator<Item=S>,
+        S: AsRef<OsStr>,
+    {
+        let flags = std::iter::repeat("-e");
+        let pairs = flags.zip(scripts);
+
+        let mut command = Command::new(&self.bin_path);
+        for (flag, script) in pairs {
+            command.arg(flag);
+            command.arg(script);
+        }
+
+        RubyExecError::process(&mut command)
     }
 
     fn _get_config(&self, key: &dyn Display) -> Result<String, RubyExecError> {
@@ -194,5 +214,16 @@ impl From<FromUtf8Error> for RubyExecError {
     #[inline]
     fn from(error: FromUtf8Error) -> Self {
         RubyExecError::Utf8Error(error)
+    }
+}
+
+impl RubyExecError {
+    fn process(command: &mut Command) -> Result<String, Self> {
+        let output = command.output()?;
+        if output.status.success() {
+            Ok(String::from_utf8(output.stdout)?)
+        } else {
+            Err(RubyExecError::RunFail(output))
+        }
     }
 }
