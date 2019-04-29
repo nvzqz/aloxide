@@ -7,6 +7,15 @@ use std::path::{Path, PathBuf};
 
 use crate::{Version, util::RemoveFileHandle};
 
+/// Unpacks the contents of `archive` (a `.tar.bz2`) into `dst_dir`.
+#[inline]
+pub fn unpack(
+    archive: impl io::Read,
+    dst_dir: impl AsRef<Path>,
+) -> io::Result<()> {
+    tar::Archive::new(bzip2::read::BzDecoder::new(archive)).unpack(dst_dir)
+}
+
 /// Downloads and unpacks Ruby's source code.
 pub struct RubySrcDownloader<'a> {
     version: Version,
@@ -155,10 +164,7 @@ impl<'a> RubySrcDownloader<'a> {
         use RubySrcDownloadError::*;
 
         fs::create_dir_all(dst_dir).map_err(CreateDstDir)?;
-
-        tar::Archive::new(bzip2::read::BzDecoder::new(file))
-            .unpack(dst_dir)
-            .map_err(UnpackArchive)
+        unpack(file, dst_dir).map_err(UnpackArchive)
     }
 }
 
