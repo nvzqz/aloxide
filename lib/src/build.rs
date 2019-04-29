@@ -11,6 +11,7 @@ use crate::{Ruby, version::{Version, VersionParseError}};
 pub struct RubyBuilder {
     src_dir: PathBuf,
     out_dir: PathBuf,
+    target: String,
     autoconf: Command,
     force_autoconf: bool,
     configure: Command,
@@ -24,19 +25,30 @@ impl RubyBuilder {
     pub(crate) fn new(
         src_dir: PathBuf,
         out_dir: PathBuf,
+        target: String,
     ) -> Self {
-        let configure_path = src_dir.join("configure");
+        let configure_path = if cfg!(target_os = "windows") {
+            let mut path = src_dir.join("win32");
+            path.push("configure.bat");
+            path
+        } else {
+            src_dir.join("configure")
+        };
 
         let mut configure = Command::new(&configure_path);
         configure.arg(format!("--prefix={}", out_dir.display()));
 
-        let mut make = Command::new("make");
+        let mut make = match cc::windows_registry::find(&target, "nmake.exe") {
+            Some(nmake) => nmake,
+            None => Command::new("make"),
+        };
         make.arg("install");
         make.env("PREFIX", &out_dir);
 
         RubyBuilder {
             src_dir,
             out_dir,
+            target,
             autoconf: Command::new("autoconf"),
             force_autoconf: false,
             configure,
@@ -252,13 +264,24 @@ impl RubyBuilder {
             )
         }
 
-        let run_autoconf = self.force_autoconf || !self.configure_path.exists();
-        phase!(autoconf, run_autoconf, AutoconfFail, AutoconfSpawnFail);
+        let run_autoconf = if cfg!(target_os = "windows") {
+            false
+        } else {
+            let run_autoconf = self.force_autoconf || !self.configure_path.exists();
+            phase!(autoconf, run_autoconf, AutoconfFail, AutoconfSpawnFail);
+            run_autoconf
+        };
 
         let run_configure = run_autoconf || self.force_configure || !self.src_dir.join("Makefile").exists();
         phase!(configure, run_configure, ConfigureFail, ConfigureSpawnFail);
 
-        let bin_path = self.out_dir.join("bin").join("ruby");
+        let mut bin_path = self.out_dir.join("bin");
+        if cfg!(target_os = "windows") {
+            bin_path.push("ruby.exe");
+        } else {
+            bin_path.push("ruby")
+        }
+
         let run_make = run_configure || self.force_make || !bin_path.exists();
         phase!(make, run_make, MakeFail, MakeSpawnFail);
 

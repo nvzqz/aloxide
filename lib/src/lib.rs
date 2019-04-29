@@ -3,6 +3,7 @@
 #![deny(missing_docs)]
 
 extern crate bzip2;
+extern crate cc;
 extern crate dirs;
 extern crate http_req;
 extern crate memchr;
@@ -69,8 +70,9 @@ impl Ruby {
     pub fn builder(
         src_dir: impl Into<PathBuf>,
         out_dir: impl Into<PathBuf>,
+        target: impl Into<String>,
     ) -> RubyBuilder {
-        RubyBuilder::new(src_dir.into(), out_dir.into())
+        RubyBuilder::new(src_dir.into(), out_dir.into(), target.into())
     }
 
     /// Builds Ruby with the default configuration.
@@ -78,8 +80,9 @@ impl Ruby {
     pub fn build(
         src_dir: impl Into<PathBuf>,
         out_dir: impl Into<PathBuf>,
+        target: impl Into<String>,
     ) -> Result<Self, RubyBuildError> {
-        Self::builder(src_dir, out_dir).build()
+        Self::builder(src_dir, out_dir, target).build()
     }
 
     /// Creates a new instance without doing anything.
