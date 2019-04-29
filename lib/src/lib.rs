@@ -161,9 +161,14 @@ impl Ruby {
         self.exec(&["-e".as_ref(), script.as_ref()])
     }
 
-    /// Returns the configuration value for `key`.
-    pub fn get_config(&self, key: impl Display) -> Result<String, RubyExecError> {
+    fn _get_config(&self, key: &dyn Display) -> Result<String, RubyExecError> {
         self.run(&format!("print RbConfig::CONFIG['{}']", key))
+    }
+
+    /// Returns the configuration value for `key`.
+    #[inline]
+    pub fn get_config(&self, key: impl Display) -> Result<String, RubyExecError> {
+        self._get_config(&key)
     }
 }
 
