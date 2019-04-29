@@ -99,42 +99,30 @@ impl<'a> RubySrcDownloader<'a> {
             return Ok(src_dir);
         }
 
-        let default_cache_dir: PathBuf;
-        let cache_dir: Option<&Path> = if self.cache {
+        let new_archive_dir: PathBuf;
+        let (archive_dir, ignore_existing): (&Path, bool) = if self.cache {
             // Use provided directory or default to "aloxide" in system cache
-            match self.cache_dir {
-                Some(cache_dir) => {
-                    Some(cache_dir)
-                },
+            let dir = match self.cache_dir {
+                Some(cache_dir) => cache_dir,
                 None => match dirs::cache_dir() {
                     Some(mut dir) => {
                         dir.push("aloxide");
-                        default_cache_dir = dir;
-                        Some(&default_cache_dir)
+                        new_archive_dir = dir;
+                        &new_archive_dir
                     },
                     None => return Err(MissingCache),
                 },
-            }
+            };
+            (dir, self.ignore_cache)
         } else {
-            None
+            let mut dir = env::temp_dir();
+            dir.push("aloxide");
+            new_archive_dir = dir;
+            (&new_archive_dir, true)
         };
+        fs::create_dir_all(archive_dir).map_err(CreateArchiveDir)?;
 
-        // Use cache directory if `self.cache` is set, or a temporary "aloxide"
-        // directory otherwise
-        let (archive_path, ignore_existing) = match cache_dir {
-            Some(dir) => (dir.join(&archive_name), self.ignore_cache),
-            None => {
-                let mut dir = env::temp_dir();
-                dir.push("aloxide");
-
-                if let Err(error) = fs::create_dir_all(&dir) {
-                    return Err(CreateTempDir(error));
-                }
-
-                dir.push(&archive_name);
-                (dir, true)
-            },
-        };
+        let archive_path = archive_dir.join(&archive_name);
 
         let remove_archive: Option<RemoveFileHandle> = if !self.cache {
             // Clean up archive in temp dir
@@ -155,7 +143,18 @@ impl<'a> RubySrcDownloader<'a> {
     }
 
     fn _download(version: Version, archive_path: &Path) -> Result<(), RubySrcDownloadError> {
-        unimplemented!("TODO: Download {} to {:?}", version, archive_path);
+        use RubySrcDownloadError::*;
+
+        let mut file = fs::OpenOptions::new()
+            .write(true)
+            .create(true)
+            .open(archive_path)
+            .map_err(CreateArchive)?;
+
+        match http_req::request::get(version.url(), &mut file) {
+            Ok(_) => Ok(()),
+            Err(error) => Err(GetArchive(error)),
+        }
     }
 
     fn _unpack(archive_path: &Path, src_dir: &Path) -> Result<(), RubySrcDownloadError> {
@@ -170,6 +169,10 @@ impl<'a> RubySrcDownloader<'a> {
 pub enum RubySrcDownloadError {
     /// No cache directory could be found for the current user.
     MissingCache,
-    /// Failed to create a temporary "aloxide" directory.
-    CreateTempDir(io::Error),
+    /// Failed to create a directory for the archive.
+    CreateArchiveDir(io::Error),
+    /// Failed to create a file for the archive.
+    CreateArchive(io::Error),
+    /// Failed to GET the archive.
+    GetArchive(http_req::error::Error),
 }

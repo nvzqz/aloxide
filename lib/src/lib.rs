@@ -3,6 +3,7 @@
 #![deny(missing_docs)]
 
 extern crate dirs;
+extern crate http_req;
 extern crate memchr;
 
 use std::ffi::OsStr;
