@@ -39,13 +39,23 @@ pub struct Ruby {
 }
 
 impl Ruby {
-    /// Downloads and unpacks the source for `version` to `dst_dir`.
+    /// Returns a new Ruby source code downloader.
     #[inline]
     pub fn src_downloader<'a, P: AsRef<Path> + ?Sized>(
         version: Version,
         dst_dir: &'a P,
     ) -> RubySrcDownloader<'a> {
         RubySrcDownloader::new(version, dst_dir.as_ref())
+    }
+
+    /// Downloads and unpacks the source for `version` to `dst_dir` with the
+    /// default configuration.
+    #[inline]
+    pub fn download_src(
+        version: Version,
+        dst_dir: impl AsRef<Path>,
+    ) -> Result<PathBuf, RubySrcDownloadError> {
+        Self::src_downloader(version, dst_dir.as_ref()).download()
     }
 
     /// Returns a new Ruby builder.
