@@ -11,7 +11,6 @@ use crate::{Ruby, version::{Version, VersionParseError}};
 pub struct RubyBuilder {
     src_dir: PathBuf,
     out_dir: PathBuf,
-    target: String,
     autoconf: Command,
     force_autoconf: bool,
     configure: Command,
@@ -25,7 +24,7 @@ impl RubyBuilder {
     pub(crate) fn new(
         src_dir: PathBuf,
         out_dir: PathBuf,
-        target: String,
+        target: &str,
     ) -> Self {
         let configure_path = if cfg!(target_os = "windows") {
             let mut path = src_dir.join("win32");
@@ -38,7 +37,7 @@ impl RubyBuilder {
         let mut configure = Command::new(&configure_path);
         configure.arg(format!("--prefix={}", out_dir.display()));
 
-        let mut make = match cc::windows_registry::find(&target, "nmake.exe") {
+        let mut make = match cc::windows_registry::find(target, "nmake.exe") {
             Some(nmake) => nmake,
             None => Command::new("make"),
         };
@@ -48,7 +47,6 @@ impl RubyBuilder {
         RubyBuilder {
             src_dir,
             out_dir,
-            target,
             autoconf: Command::new("autoconf"),
             force_autoconf: false,
             configure,

@@ -70,9 +70,9 @@ impl Ruby {
     pub fn builder(
         src_dir: impl Into<PathBuf>,
         out_dir: impl Into<PathBuf>,
-        target: impl Into<String>,
+        target: impl AsRef<str>,
     ) -> RubyBuilder {
-        RubyBuilder::new(src_dir.into(), out_dir.into(), target.into())
+        RubyBuilder::new(src_dir.into(), out_dir.into(), target.as_ref())
     }
 
     /// Builds Ruby with the default configuration.
@@ -80,7 +80,7 @@ impl Ruby {
     pub fn build(
         src_dir: impl Into<PathBuf>,
         out_dir: impl Into<PathBuf>,
-        target: impl Into<String>,
+        target: impl AsRef<str>,
     ) -> Result<Self, RubyBuildError> {
         Self::builder(src_dir, out_dir, target).build()
     }
