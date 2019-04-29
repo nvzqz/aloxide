@@ -2,9 +2,11 @@
 
 #![deny(missing_docs)]
 
+extern crate bzip2;
 extern crate dirs;
 extern crate http_req;
 extern crate memchr;
+extern crate tar;
 
 use std::ffi::OsStr;
 use std::fmt::Display;

@@ -1,5 +1,5 @@
 use std::env;
-use std::fs;
+use std::fs::{self, File};
 use std::io;
 use std::path::{Path, PathBuf};
 
@@ -9,8 +9,7 @@ use crate::{Version, util::RemoveFileHandle};
 pub struct RubySrcDownloader<'a> {
     version: Version,
     dst_dir: &'a Path,
-    src_dir: Option<PathBuf>,
-    ignore_src_dir: bool,
+    ignore_existing_dir: bool,
     ignore_cache: bool,
     cache: bool,
     cache_dir: Option<&'a Path>,
@@ -22,8 +21,7 @@ impl<'a> RubySrcDownloader<'a> {
         RubySrcDownloader {
             version,
             dst_dir,
-            src_dir: None,
-            ignore_src_dir: false,
+            ignore_existing_dir: false,
             ignore_cache: false,
             cache: false,
             cache_dir: None,
@@ -32,20 +30,11 @@ impl<'a> RubySrcDownloader<'a> {
 
     /// Overwrite the sources directory in `dst_dir` if it already exists.
     ///
-    /// **Warning:** This will remove the contents of the existing sources
+    /// **Warning:** This will overwrite the contents of the existing sources
     /// directory. Use carefully!
     #[inline]
-    pub fn ignore_src_dir(mut self) -> Self {
-        self.ignore_src_dir = true;
-        self
-    }
-
-    /// Sets the name of the output source directory at `dst_dir`.
-    ///
-    /// The default is the same as the archive's name sans extension.
-    #[inline]
-    pub fn src_dir_name(mut self, name: impl AsRef<Path>) -> Self {
-        self.src_dir = Some(self.dst_dir.join(name));
+    pub fn ignore_existing_dir(mut self) -> Self {
+        self.ignore_existing_dir = true;
         self
     }
 
@@ -85,16 +74,12 @@ impl<'a> RubySrcDownloader<'a> {
         let archive_ext_len = archive_ext.len();
         debug_assert!(archive_name.ends_with(archive_ext));
 
-        let src_dir = if let Some(dir) = self.src_dir {
-            dir
-        } else {
-            // Use substring of `archive_name`
-            let src_name_len = archive_name.len() - archive_ext_len;
-            let src_name = &archive_name[..src_name_len];
-            self.dst_dir.join(src_name)
-        };
+        // Use substring of `archive_name`
+        let src_name_len = archive_name.len() - archive_ext_len;
+        let src_name = &archive_name[..src_name_len];
+        let src_dir = self.dst_dir.join(src_name);
 
-        if !self.ignore_src_dir && src_dir.exists() {
+        if !self.ignore_existing_dir && src_dir.exists() {
             // Reuse the existing sources
             return Ok(src_dir);
         }
@@ -132,33 +117,46 @@ impl<'a> RubySrcDownloader<'a> {
         };
 
         let archive_exists = archive_path.exists();
-        if ignore_existing || !archive_exists {
-            Self::_download(self.version, &archive_path)?;
-        }
 
-        Self::_unpack(&archive_path, &src_dir)?;
+        let file = if ignore_existing || !archive_exists {
+            Self::_download(self.version, &archive_path)?
+        } else {
+            File::open(&archive_path).map_err(OpenArchive)?
+        };
+
+        Self::_unpack(file, &self.dst_dir)?;
 
         drop(remove_archive);
         Ok(src_dir)
     }
 
-    fn _download(version: Version, archive_path: &Path) -> Result<(), RubySrcDownloadError> {
+    fn _download(version: Version, archive_path: &Path) -> Result<File, RubySrcDownloadError> {
         use RubySrcDownloadError::*;
 
         let mut file = fs::OpenOptions::new()
+            .read(true)
             .write(true)
             .create(true)
             .open(archive_path)
             .map_err(CreateArchive)?;
 
         match http_req::request::get(version.url(), &mut file) {
-            Ok(_) => Ok(()),
-            Err(error) => Err(GetArchive(error)),
+            Ok(_) => Ok(file),
+            Err(error) => Err(RequestArchive(error)),
         }
     }
 
-    fn _unpack(archive_path: &Path, src_dir: &Path) -> Result<(), RubySrcDownloadError> {
-        unimplemented!("TODO: Unpack {:?} into {:?}", archive_path, src_dir);
+    fn _unpack(
+        file: File,
+        dst_dir: &Path,
+    ) -> Result<(), RubySrcDownloadError> {
+        use RubySrcDownloadError::*;
+
+        fs::create_dir_all(dst_dir).map_err(CreateDstDir)?;
+
+        tar::Archive::new(bzip2::read::BzDecoder::new(file))
+            .unpack(dst_dir)
+            .map_err(UnpackArchive)
     }
 }
 
@@ -169,10 +167,16 @@ impl<'a> RubySrcDownloader<'a> {
 pub enum RubySrcDownloadError {
     /// No cache directory could be found for the current user.
     MissingCache,
+    /// Failed to open an existing archive.
+    OpenArchive(io::Error),
     /// Failed to create a directory for the archive.
     CreateArchiveDir(io::Error),
     /// Failed to create a file for the archive.
     CreateArchive(io::Error),
     /// Failed to GET the archive.
-    GetArchive(http_req::error::Error),
+    RequestArchive(http_req::error::Error),
+    /// Failed to unpack the `.tar.gz` archive.
+    UnpackArchive(io::Error),
+    /// Failed to create the destination directory.
+    CreateDstDir(io::Error),
 }

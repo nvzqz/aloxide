@@ -5,6 +5,8 @@ authors = ["Nikolai Vazquez"]
 edition = "2018"
 
 [dependencies]
+bzip2 = "0.3"
 dirs = "1"
 http_req = "0.4"
 memchr = "2"
+tar = "0.4"
