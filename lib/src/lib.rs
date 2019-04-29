@@ -15,15 +15,21 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
 use std::string::FromUtf8Error;
 
-mod build;
-mod download;
 mod util;
-mod version;
+pub mod build;
+pub mod download;
+pub mod version;
 
+use self::{
+    build::RubyBuildError,
+    download::RubySrcDownloadError,
+};
+
+#[doc(inline)]
 pub use self::{
-    build::*,
-    download::*,
-    version::*,
+    build::RubyBuilder,
+    download::RubySrcDownloader,
+    version::Version,
 };
 
 /// An existing Ruby installation

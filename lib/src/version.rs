@@ -1,3 +1,5 @@
+//! Ruby versions.
+
 use std::convert::TryFrom;
 use std::fmt;
 use std::num::ParseIntError;

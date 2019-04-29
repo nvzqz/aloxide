@@ -1,9 +1,11 @@
+//! Utilities for building Ruby.
+
 use std::ffi::OsStr;
 use std::io;
 use std::path::PathBuf;
 use std::process::{Command, ExitStatus, Stdio};
 
-use crate::{Ruby, Version, VersionParseError};
+use crate::{Ruby, version::{Version, VersionParseError}};
 
 /// Configures and builds Ruby.
 pub struct RubyBuilder {

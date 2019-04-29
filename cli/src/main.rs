@@ -1,7 +1,7 @@
 extern crate aloxide;
 extern crate clap;
 
-use aloxide::{Ruby, Version, VersionParseError};
+use aloxide::{Ruby, version::{Version, VersionParseError}};
 use clap::{Arg, ArgMatches, ArgSettings, App, AppSettings, SubCommand};
 
 macro_rules! error {
