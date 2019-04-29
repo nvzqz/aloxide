@@ -3,7 +3,7 @@
 use std::ffi::OsStr;
 use std::io;
 use std::path::PathBuf;
-use std::process::{Command, ExitStatus, Stdio};
+use std::process::{Command, Output, Stdio};
 
 use crate::{Ruby, version::{Version, VersionParseError}};
 
@@ -240,9 +240,9 @@ impl RubyBuilder {
         macro_rules! phase {
             ($cmd:ident, $cond:expr, $fail:ident, $spawn_fail:ident) => (
                 if $cond {
-                    match self.$cmd.current_dir(&self.src_dir).status() {
-                        Ok(status) => if !status.success() {
-                            return Err($fail(status));
+                    match self.$cmd.current_dir(&self.src_dir).output() {
+                        Ok(output) => if !output.status.success() {
+                            return Err($fail(output));
                         },
                         Err(error) => {
                             return Err($spawn_fail(error));
@@ -292,15 +292,15 @@ pub enum RubyBuildError {
     /// Failed to spawn a process for `autoconf`.
     AutoconfSpawnFail(io::Error),
     /// `autoconf` exited unsuccessfully.
-    AutoconfFail(ExitStatus),
+    AutoconfFail(Output),
     /// Failed to spawn a process for `configure`.
     ConfigureSpawnFail(io::Error),
     /// `configure` exited unsuccessfully.
-    ConfigureFail(ExitStatus),
+    ConfigureFail(Output),
     /// Failed to spawn a process for `make`.
     MakeSpawnFail(io::Error),
     /// `make` exited unsuccessfully.
-    MakeFail(ExitStatus),
+    MakeFail(Output),
     /// Failed to spawn a process for `ruby`.
     RubySpawnFail(io::Error),
     /// Failed to parse the Ruby version as UTF-8.
