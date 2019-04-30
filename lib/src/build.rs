@@ -1,6 +1,8 @@
 //! Utilities for building Ruby.
 
 use std::ffi::OsStr;
+use std::fmt::Display;
+use std::borrow::Borrow;
 use std::io;
 use std::path::PathBuf;
 use std::process::{Command, Output, Stdio};
@@ -36,6 +38,7 @@ impl RubyBuilder {
 
         let mut configure = Command::new(&configure_path);
         configure.arg(format!("--prefix={}", out_dir.display()));
+        configure.arg(format!("--target={}", target));
 
         let mut make = match cc::windows_registry::find(target, "nmake.exe") {
             Some(nmake) => nmake,
@@ -155,7 +158,7 @@ impl AutoconfPhase {
 
     /// Perform custom operations on the `Command` instance used.
     #[inline]
-    pub fn with<F: FnOnce(&mut Command) -> ()>(mut self, f: F) -> Self {
+    pub fn with_command<F: FnOnce(&mut Command) -> ()>(mut self, f: F) -> Self {
         f(&mut self.0.autoconf);
         self
     }
@@ -248,9 +251,88 @@ impl ConfigurePhase {
         self
     }
 
+    /// Include `feature`.
+    #[inline]
+    pub fn enable(mut self, feature: impl Display) -> Self {
+        self.0.configure.arg(format!("--enable-{}", feature));
+        self
+    }
+
+    /// Disable `feature`.
+    #[inline]
+    pub fn disable(mut self, feature: impl Display) -> Self {
+        self.0.configure.arg(format!("--disable-{}", feature));
+        self
+    }
+
+    /// Include `package`.
+    #[inline]
+    pub fn with(mut self, package: impl Display) -> Self {
+        self.0.configure.arg(format!("--with-{}", package));
+        self
+    }
+
+    /// Remove `package`.
+    #[inline]
+    pub fn without(mut self, package: impl Display) -> Self {
+        self.0.configure.arg(format!("--without-{}", package));
+        self
+    }
+
+    /// Whether to build a shared library for Ruby.
+    #[inline]
+    pub fn shared(mut self, enable_shared: bool) -> Self {
+        let flag = if enable_shared {
+            "--enable-shared"
+        } else {
+            "--disable-shared"
+        };
+        self.0.configure.arg(flag);
+        self
+    }
+
+    /// Build an Apple/NeXT Multi Architecture Binary (MAB). If this option is
+    /// disabled or omitted entirely, then the package will be built only for
+    /// the target platform.
+    ///
+    /// Passes `archs` as comma-separated values into `--with-arch=`.
+    #[inline]
+    pub fn arch(mut self, archs: &[impl Borrow<str>]) -> Self {
+        self.0.configure.arg(format!("--with-arch={}", archs.join(",")));
+        self
+    }
+
+    /// Do not install neither rdoc indexes nor C API documents during install.
+    #[inline]
+    pub fn disable_install_doc(mut self) -> Self {
+        self.0.configure.arg("--disable-install-doc");
+        self
+    }
+
+    /// Disable dynamic link feature.
+    #[inline]
+    pub fn disable_dy_link(mut self) -> Self {
+        self.0.configure.arg("--disable-dln");
+        self
+    }
+
+    /// Resolve load paths at run time.
+    #[inline]
+    pub fn enable_load_relative(mut self) -> Self {
+        self.0.configure.arg("--enable-load-relative");
+        self
+    }
+
+    /// Disable rubygems by default.
+    #[inline]
+    pub fn disable_rubygems(mut self) -> Self {
+        self.0.configure.arg("--disable-rubygems");
+        self
+    }
+
     /// Perform custom operations on the `Command` instance used.
     #[inline]
-    pub fn with<F: FnOnce(&mut Command) -> ()>(mut self, f: F) -> Self {
+    pub fn with_command<F: FnOnce(&mut Command) -> ()>(mut self, f: F) -> Self {
         f(&mut self.0.configure);
         self
     }
@@ -338,7 +420,7 @@ impl MakePhase {
 
     /// Perform custom operations on the `Command` instance used.
     #[inline]
-    pub fn with<F: FnOnce(&mut Command) -> ()>(mut self, f: F) -> Self {
+    pub fn with_command<F: FnOnce(&mut Command) -> ()>(mut self, f: F) -> Self {
         f(&mut self.0.make);
         self
     }

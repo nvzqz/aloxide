@@ -14,7 +14,8 @@ fn main() {
     };
 
     let manifest_dir = PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").unwrap());
-    let aloxide = manifest_dir.join("..")
+    let aloxide = manifest_dir
+        .join("..")
         .join("..")
         .join("target")
         .join("aloxide");
@@ -32,6 +33,7 @@ fn main() {
             .stdout(Stdio::inherit())
             .stderr(Stdio::inherit())
         .configure()
+            .disable_install_doc()
             .stdout(Stdio::inherit())
             .stderr(Stdio::inherit())
         .make()
