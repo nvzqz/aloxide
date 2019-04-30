@@ -1,5 +1,6 @@
 extern crate aloxide;
 
+use std::env;
 use std::path::PathBuf;
 use std::process::Stdio;
 use aloxide::{Ruby, Version};
@@ -7,7 +8,7 @@ use aloxide::{Ruby, Version};
 fn main() {
     let target = std::env::var("TARGET").unwrap();
 
-    let version = match std::env::var("ALOXIDE_RUBY_VERSION") {
+    let version = match env::var("ALOXIDE_RUBY_VERSION") {
         Ok(ref version) if !version.is_empty() => {
             version.parse::<Version>().unwrap()
         },
@@ -23,14 +24,16 @@ fn main() {
     assert!(aloxide.parent().unwrap().exists());
 
     let target_dir = aloxide.join(&target);
+    let out_dir = target_dir.join(&format!("ruby-{}-out", version));
 
     println!("Downloading Ruby {} into '{}'", version, target_dir.display());
 
-    let src_dir = Ruby::src_downloader(version, &target_dir)
-        .cache()
-        .download()
-        .unwrap();
-    let out_dir = target_dir.join(&format!("ruby-{}-out", version));
+    let cache = env::var_os("ALOXIDE_RUBY_CACHE");
+    let mut downloader = Ruby::src_downloader(version, &target_dir);
+    if let Some(cache) = &cache {
+        downloader = downloader.cache_dir(cache);
+    }
+    let src_dir = downloader.cache().download().unwrap();
 
     println!("Compiling sources in '{}' to '{}'", src_dir.display(), out_dir.display());
 
