@@ -57,190 +57,22 @@ impl RubyBuilder {
         }
     }
 
-    /// Run `autoconf`, even if `configure` already exists.
+    /// Adjust what happens when running `autoconf`.
     #[inline]
-    pub fn force_autoconf(mut self) -> Self {
-        self.force_autoconf = true;
-        self
+    pub fn autoconf(self) -> AutoconfPhase {
+        AutoconfPhase(self)
     }
 
-    /// Pass `args` into `autoconf` when generating `configure`.
+    /// Adjust what happens when running `configure`.
     #[inline]
-    pub fn autoconf_args<I, S>(mut self, args: I) -> Self
-    where
-        I: IntoIterator<Item=S>,
-        S: AsRef<OsStr>,
-    {
-        self.autoconf.args(args);
-        self
+    pub fn configure(self) -> ConfigurePhase {
+        ConfigurePhase(self)
     }
 
-    /// Pass the environment vars into `autoconf` when generating `configure`.
+    /// Adjust what happens when running `make`.
     #[inline]
-    pub fn autoconf_envs<I, K, V>(mut self, envs: I) -> Self
-    where
-        I: IntoIterator<Item=(K, V)>,
-        K: AsRef<OsStr>,
-        V: AsRef<OsStr>,
-    {
-        self.autoconf.envs(envs);
-        self
-    }
-
-    /// Remove the environment vars for `autoconf` when generating `configure`.
-    #[inline]
-    pub fn autoconf_remove_envs<I, S>(mut self, envs: I) -> Self
-    where
-        I: IntoIterator<Item=S>,
-        S: AsRef<OsStr>,
-    {
-        for key in envs { self.autoconf.env_remove(key); }
-        self
-    }
-
-    /// Sets the `stdin` handle of `autoconf`.
-    #[inline]
-    pub fn autoconf_stdin<A: Into<Stdio>>(mut self, stdin: A) -> Self {
-        self.autoconf.stdin(stdin);
-        self
-    }
-
-    /// Sets the `stdout` handle of `autoconf`.
-    #[inline]
-    pub fn autoconf_stdout<A: Into<Stdio>>(mut self, stdout: A) -> Self {
-        self.autoconf.stdout(stdout);
-        self
-    }
-
-    /// Sets the `stderr` handle of `autoconf`.
-    #[inline]
-    pub fn autoconf_stderr<A: Into<Stdio>>(mut self, stderr: A) -> Self {
-        self.autoconf.stderr(stderr);
-        self
-    }
-
-    /// Run `configure`, even if `Makefile` already exists.
-    #[inline]
-    pub fn force_configure(mut self) -> Self {
-        self.force_configure = true;
-        self
-    }
-
-    /// Pass `args` into the `configure` script when generating `Makefile`.
-    #[inline]
-    pub fn configure_args<I, S>(mut self, args: I) -> Self
-    where
-        I: IntoIterator<Item=S>,
-        S: AsRef<OsStr>,
-    {
-        self.configure.args(args);
-        self
-    }
-
-    /// Pass the environment vars into `configure` when generating `Makefile`.
-    #[inline]
-    pub fn configure_envs<I, K, V>(mut self, envs: I) -> Self
-    where
-        I: IntoIterator<Item=(K, V)>,
-        K: AsRef<OsStr>,
-        V: AsRef<OsStr>,
-    {
-        self.configure.envs(envs);
-        self
-    }
-
-    /// Remove the environment vars for `configure` when generating `Makefile`.
-    #[inline]
-    pub fn configure_remove_envs<I, S>(mut self, envs: I) -> Self
-    where
-        I: IntoIterator<Item=S>,
-        S: AsRef<OsStr>,
-    {
-        for key in envs { self.configure.env_remove(key); }
-        self
-    }
-
-    /// Sets the `stdin` handle of `configure`.
-    #[inline]
-    pub fn configure_stdin<A: Into<Stdio>>(mut self, stdin: A) -> Self {
-        self.configure.stdin(stdin);
-        self
-    }
-
-    /// Sets the `stdout` handle of `configure`.
-    #[inline]
-    pub fn configure_stdout<A: Into<Stdio>>(mut self, stdout: A) -> Self {
-        self.configure.stdout(stdout);
-        self
-    }
-
-    /// Sets the `stderr` handle of `configure`.
-    #[inline]
-    pub fn configure_stderr<A: Into<Stdio>>(mut self, stderr: A) -> Self {
-        self.configure.stderr(stderr);
-        self
-    }
-
-    /// Run `make`, even if `out_dir/bin/ruby` already exists.
-    #[inline]
-    pub fn force_make(mut self) -> Self {
-        self.force_make = true;
-        self
-    }
-
-    /// Pass `args` into `make install`.
-    #[inline]
-    pub fn make_args<I, S>(mut self, args: I) -> Self
-    where
-        I: IntoIterator<Item=S>,
-        S: AsRef<OsStr>,
-    {
-        self.make.args(args);
-        self
-    }
-
-    /// Pass the environment vars into `make install`.
-    #[inline]
-    pub fn make_envs<I, K, V>(mut self, envs: I) -> Self
-    where
-        I: IntoIterator<Item=(K, V)>,
-        K: AsRef<OsStr>,
-        V: AsRef<OsStr>,
-    {
-        self.make.envs(envs);
-        self
-    }
-
-    /// Remove the environment vars for `make install`.
-    #[inline]
-    pub fn make_remove_envs<I, S>(mut self, envs: I) -> Self
-    where
-        I: IntoIterator<Item=S>,
-        S: AsRef<OsStr>,
-    {
-        for key in envs { self.make.env_remove(key); }
-        self
-    }
-
-    /// Sets the `stdin` handle of `make install`.
-    #[inline]
-    pub fn make_stdin<A: Into<Stdio>>(mut self, stdin: A) -> Self {
-        self.make.stdin(stdin);
-        self
-    }
-
-    /// Sets the `stdout` handle of `make install`.
-    #[inline]
-    pub fn make_stdout<A: Into<Stdio>>(mut self, stdout: A) -> Self {
-        self.make.stdout(stdout);
-        self
-    }
-
-    /// Sets the `stderr` handle of `make install`.
-    #[inline]
-    pub fn make_stderr<A: Into<Stdio>>(mut self, stderr: A) -> Self {
-        self.make.stderr(stderr);
-        self
+    pub fn make(self) -> MakePhase {
+        MakePhase(self)
     }
 
     /// Performs the required build steps for Ruby in one go.
@@ -305,6 +137,250 @@ impl RubyBuilder {
             lib_path,
             bin_path,
         })
+    }
+}
+
+/// Adjusts what happens when running `autoconf`.
+///
+/// **Note:** On the MSVC target platform, `autoconf` is not run.
+pub struct AutoconfPhase(RubyBuilder);
+
+impl AutoconfPhase {
+    /// Force `autoconf` to run if applicable.
+    #[inline]
+    pub fn force(mut self) -> Self {
+        self.0.force_autoconf = true;
+        self
+    }
+
+    /// Pass `args` into `autoconf`.
+    #[inline]
+    pub fn args<I, S>(mut self, args: I) -> Self
+    where
+        I: IntoIterator<Item=S>,
+        S: AsRef<OsStr>,
+    {
+        self.0.autoconf.args(args);
+        self
+    }
+
+    /// Pass the environment vars into `autoconf`.
+    #[inline]
+    pub fn envs<I, K, V>(mut self, envs: I) -> Self
+    where
+        I: IntoIterator<Item=(K, V)>,
+        K: AsRef<OsStr>,
+        V: AsRef<OsStr>,
+    {
+        self.0.autoconf.envs(envs);
+        self
+    }
+
+    /// Remove the environment vars for `autoconf`.
+    #[inline]
+    pub fn remove_envs<I, S>(mut self, envs: I) -> Self
+    where
+        I: IntoIterator<Item=S>,
+        S: AsRef<OsStr>,
+    {
+        for key in envs { self.0.autoconf.env_remove(key); }
+        self
+    }
+
+    /// Sets the `stdin` handle of `autoconf`.
+    #[inline]
+    pub fn stdin<A: Into<Stdio>>(mut self, stdin: A) -> Self {
+        self.0.autoconf.stdin(stdin);
+        self
+    }
+
+    /// Sets the `stdout` handle of `autoconf`.
+    #[inline]
+    pub fn stdout<A: Into<Stdio>>(mut self, stdout: A) -> Self {
+        self.0.autoconf.stdout(stdout);
+        self
+    }
+
+    /// Sets the `stderr` handle of `autoconf`.
+    #[inline]
+    pub fn stderr<A: Into<Stdio>>(mut self, stderr: A) -> Self {
+        self.0.autoconf.stderr(stderr);
+        self
+    }
+
+    /// Adjust what happens when running `configure`.
+    #[inline]
+    pub fn configure(self) -> ConfigurePhase {
+        ConfigurePhase(self.0)
+    }
+
+    /// Adjust what happens when running `make`.
+    #[inline]
+    pub fn make(self) -> MakePhase {
+        MakePhase(self.0)
+    }
+
+    /// Perform the build.
+    #[inline]
+    pub fn build(self) -> Result<Ruby, RubyBuildError> {
+        self.0.build()
+    }
+}
+
+/// Adjusts what happens when running `configure`.
+///
+/// **Note:** On the MSVC target platform, `win32/configure.bat` is run instead
+/// of `configure`.
+pub struct ConfigurePhase(RubyBuilder);
+
+impl ConfigurePhase {
+    /// Force `configure` to run.
+    #[inline]
+    pub fn force(mut self) -> Self {
+        self.0.force_configure = true;
+        self
+    }
+
+    /// Pass `args` into `configure`.
+    #[inline]
+    pub fn args<I, S>(mut self, args: I) -> Self
+    where
+        I: IntoIterator<Item=S>,
+        S: AsRef<OsStr>,
+    {
+        self.0.configure.args(args);
+        self
+    }
+
+    /// Pass the environment vars into `configure`.
+    #[inline]
+    pub fn envs<I, K, V>(mut self, envs: I) -> Self
+    where
+        I: IntoIterator<Item=(K, V)>,
+        K: AsRef<OsStr>,
+        V: AsRef<OsStr>,
+    {
+        self.0.configure.envs(envs);
+        self
+    }
+
+    /// Remove the environment vars for `configure`.
+    #[inline]
+    pub fn remove_envs<I, S>(mut self, envs: I) -> Self
+    where
+        I: IntoIterator<Item=S>,
+        S: AsRef<OsStr>,
+    {
+        for key in envs { self.0.configure.env_remove(key); }
+        self
+    }
+
+    /// Sets the `stdin` handle of `configure`.
+    #[inline]
+    pub fn stdin<A: Into<Stdio>>(mut self, stdin: A) -> Self {
+        self.0.configure.stdin(stdin);
+        self
+    }
+
+    /// Sets the `stdout` handle of `configure`.
+    #[inline]
+    pub fn stdout<A: Into<Stdio>>(mut self, stdout: A) -> Self {
+        self.0.configure.stdout(stdout);
+        self
+    }
+
+    /// Sets the `stderr` handle of `configure`.
+    #[inline]
+    pub fn stderr<A: Into<Stdio>>(mut self, stderr: A) -> Self {
+        self.0.configure.stderr(stderr);
+        self
+    }
+
+    /// Adjust what happens when running `make`.
+    #[inline]
+    pub fn make(self) -> MakePhase {
+        MakePhase(self.0)
+    }
+
+    /// Perform the build.
+    #[inline]
+    pub fn build(self) -> Result<Ruby, RubyBuildError> {
+        self.0.build()
+    }
+}
+
+/// Adjusts what happens when running `make install`.
+///
+/// **Note:** On the MSVC target platform, `nmake` is used instead of `make`.
+pub struct MakePhase(RubyBuilder);
+
+impl MakePhase {
+    /// Force `make install` to run.
+    #[inline]
+    pub fn force(mut self) -> Self {
+        self.0.force_make = true;
+        self
+    }
+
+    /// Pass `args` into `make install`.
+    #[inline]
+    pub fn args<I, S>(mut self, args: I) -> Self
+    where
+        I: IntoIterator<Item=S>,
+        S: AsRef<OsStr>,
+    {
+        self.0.make.args(args);
+        self
+    }
+
+    /// Pass the environment vars into `make install`.
+    #[inline]
+    pub fn envs<I, K, V>(mut self, envs: I) -> Self
+    where
+        I: IntoIterator<Item=(K, V)>,
+        K: AsRef<OsStr>,
+        V: AsRef<OsStr>,
+    {
+        self.0.make.envs(envs);
+        self
+    }
+
+    /// Remove the environment vars for `make install`.
+    #[inline]
+    pub fn remove_envs<I, S>(mut self, envs: I) -> Self
+    where
+        I: IntoIterator<Item=S>,
+        S: AsRef<OsStr>,
+    {
+        for key in envs { self.0.make.env_remove(key); }
+        self
+    }
+
+    /// Sets the `stdin` handle of `make install`.
+    #[inline]
+    pub fn stdin<A: Into<Stdio>>(mut self, stdin: A) -> Self {
+        self.0.make.stdin(stdin);
+        self
+    }
+
+    /// Sets the `stdout` handle of `make install`.
+    #[inline]
+    pub fn stdout<A: Into<Stdio>>(mut self, stdout: A) -> Self {
+        self.0.make.stdout(stdout);
+        self
+    }
+
+    /// Sets the `stderr` handle of `make install`.
+    #[inline]
+    pub fn stderr<A: Into<Stdio>>(mut self, stderr: A) -> Self {
+        self.0.make.stderr(stderr);
+        self
+    }
+
+    /// Perform the build.
+    #[inline]
+    pub fn build(self) -> Result<Ruby, RubyBuildError> {
+        self.0.build()
     }
 }
 

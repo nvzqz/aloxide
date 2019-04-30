@@ -28,12 +28,15 @@ fn main() {
     let out_dir = target_dir.join(&format!("ruby-{}-out", version));
 
     let ruby = Ruby::builder(&src_dir, &out_dir, target)
-        .autoconf_stdout(Stdio::inherit())
-        .autoconf_stderr(Stdio::inherit())
-        .configure_stdout(Stdio::inherit())
-        .configure_stderr(Stdio::inherit())
-        .make_stdout(Stdio::inherit())
-        .make_stderr(Stdio::inherit())
+        .autoconf()
+            .stdout(Stdio::inherit())
+            .stderr(Stdio::inherit())
+        .configure()
+            .stdout(Stdio::inherit())
+            .stderr(Stdio::inherit())
+        .make()
+            .stdout(Stdio::inherit())
+            .stderr(Stdio::inherit())
         .build()
         .unwrap();
 
