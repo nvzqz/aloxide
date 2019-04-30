@@ -153,6 +153,13 @@ impl AutoconfPhase {
         self
     }
 
+    /// Perform custom operations on the `Command` instance used.
+    #[inline]
+    pub fn with<F: FnOnce(&mut Command) -> ()>(mut self, f: F) -> Self {
+        f(&mut self.0.autoconf);
+        self
+    }
+
     /// Pass `args` into `autoconf`.
     #[inline]
     pub fn args<I, S>(mut self, args: I) -> Self
@@ -241,6 +248,13 @@ impl ConfigurePhase {
         self
     }
 
+    /// Perform custom operations on the `Command` instance used.
+    #[inline]
+    pub fn with<F: FnOnce(&mut Command) -> ()>(mut self, f: F) -> Self {
+        f(&mut self.0.configure);
+        self
+    }
+
     /// Pass `args` into `configure`.
     #[inline]
     pub fn args<I, S>(mut self, args: I) -> Self
@@ -319,6 +333,13 @@ impl MakePhase {
     #[inline]
     pub fn force(mut self) -> Self {
         self.0.force_make = true;
+        self
+    }
+
+    /// Perform custom operations on the `Command` instance used.
+    #[inline]
+    pub fn with<F: FnOnce(&mut Command) -> ()>(mut self, f: F) -> Self {
+        f(&mut self.0.make);
         self
     }
 
