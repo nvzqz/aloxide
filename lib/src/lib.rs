@@ -42,6 +42,7 @@ pub struct Ruby {
     version: Version,
     src_dir: PathBuf,
     out_dir: PathBuf,
+    lib_path: PathBuf,
     bin_path: PathBuf,
 }
 
@@ -94,8 +95,9 @@ impl Ruby {
     ) -> Ruby {
         let src_dir = src_dir.into();
         let out_dir = out_dir.into();
+        let lib_path = out_dir.join("lib");
         let bin_path = out_dir.join("bin").join("ruby");
-        Ruby { version, src_dir, out_dir, bin_path }
+        Ruby { version, src_dir, out_dir, lib_path, bin_path }
     }
 
     /// Returns the Ruby version.
@@ -193,6 +195,77 @@ impl Ruby {
     pub fn get_config(&self, key: impl Display) -> Result<String, RubyExecError> {
         self._get_config(&key)
     }
+
+    /// Returns the value of `RbConfig::CONFIG['LIBRUBYARG']`.
+    #[inline]
+    pub fn lib_args(&self) -> Result<String, RubyExecError> {
+        self.get_config("LIBRUBYARG")
+    }
+
+    // FIXME: This leads to linking issues where external symbols prefixed with
+    // `__imp__` cannot be found.
+    #[cfg(windows)]
+    fn _link_imp(&self, lib_args: String, kind: &str) -> Result<(), RubyLinkError> {
+        let mut linked_ruby = false;
+
+        for lib in lib_args.split_whitespace() {
+            if lib.contains("ruby") {
+                linked_ruby = true;
+            }
+            let name = &lib[..(lib.len() - 4)];
+            println!("cargo:rustc-link-lib={}={}", kind, name);
+        }
+
+        if linked_ruby {
+            Ok(())
+        } else {
+            Err(RubyLinkError::MissingRuby(lib_args))
+        }
+    }
+
+    #[cfg(not(windows))]
+    fn _link_imp(&self, lib_args: String, kind: &str) -> Result<(), RubyLinkError> {
+        let mut iter = lib_args.split_whitespace();
+        let mut linked_ruby = false;
+
+        while let Some(flag) = iter.next() {
+            if flag == "-framework" {
+                if let Some(framework) = iter.next() {
+                    println!("cargo:rustc-link-lib=framework={}", framework);
+                } else {
+                    return Err(RubyLinkError::MissingFramework(lib_args));
+                }
+            } else if flag.starts_with("-l") {
+                let name = &flag[2..];
+                if name.starts_with("ruby") {
+                    linked_ruby = true;
+                    println!("cargo:rustc-link-lib={}={}", kind, name);
+                } else {
+                    println!("cargo:rustc-link-lib={}", name);
+                }
+            }
+        }
+
+        if linked_ruby {
+            Ok(())
+        } else {
+            Err(RubyLinkError::MissingRuby(lib_args))
+        }
+    }
+
+    /// Tells `cargo` to link to Ruby and its libraries.
+    pub fn link(&self, static_lib: bool) -> Result<(), RubyLinkError> {
+        println!("cargo:rustc-link-search={}", self.lib_path.display());
+
+        let (key, kind) = if static_lib {
+            ("LIBRUBYARG_STATIC", "static")
+        } else {
+            ("LIBRUBYARG_SHARED", "dylib")
+        };
+        let lib_args = self.get_config(key).map_err(RubyLinkError::Exec)?;
+
+        self._link_imp(lib_args, kind)
+    }
 }
 
 /// The error returned when running `ruby` fails.
@@ -229,4 +302,16 @@ impl RubyExecError {
             Err(RubyExecError::RunFail(output))
         }
     }
+}
+
+/// The error returned when linking to the Ruby library and its dependencies
+/// fails.
+#[derive(Debug)]
+pub enum RubyLinkError {
+    /// Failed to execute the `ruby` binary.
+    Exec(RubyExecError),
+    /// Did not link to the Ruby library.
+    MissingRuby(String),
+    /// A `-framework` flag was found with no argument.
+    MissingFramework(String),
 }

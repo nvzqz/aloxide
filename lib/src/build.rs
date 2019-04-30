@@ -297,10 +297,12 @@ impl RubyBuilder {
             Err(error) => return Err(RubySpawnFail(error)),
         };
 
+        let lib_path = self.out_dir.join("lib");
         Ok(Ruby {
             version,
             src_dir: self.src_dir,
             out_dir: self.out_dir,
+            lib_path,
             bin_path,
         })
     }

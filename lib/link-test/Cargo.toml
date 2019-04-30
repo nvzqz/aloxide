@@ -1,0 +1,8 @@
+[package]
+name = "aloxide-link-test"
+version = "0.1.0"
+authors = ["Nikolai Vazquez"]
+edition = "2018"
+
+[build-dependencies]
+aloxide = { path = "../" }
