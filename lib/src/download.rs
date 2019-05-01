@@ -151,7 +151,8 @@ impl<'a> RubySrcDownloader<'a> {
             .open(archive_path)
             .map_err(CreateArchive)?;
 
-        match http_req::request::get(version.url(), &mut file) {
+        let mut response = ureq::get(&version.url()).call().into_reader();
+        match io::copy(&mut response, &mut file) {
             Ok(_) => Ok(file),
             Err(error) => Err(RequestArchive(error)),
         }
@@ -182,7 +183,7 @@ pub enum RubySrcDownloadError {
     /// Failed to create a file for the archive.
     CreateArchive(io::Error),
     /// Failed to GET the archive.
-    RequestArchive(http_req::error::Error),
+    RequestArchive(io::Error),
     /// Failed to unpack the `.tar.gz` archive.
     UnpackArchive(io::Error),
     /// Failed to create the destination directory.

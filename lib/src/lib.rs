@@ -5,9 +5,9 @@
 extern crate bzip2;
 extern crate cc;
 extern crate dirs;
-extern crate http_req;
 extern crate memchr;
 extern crate tar;
+extern crate ureq;
 
 use std::ffi::OsStr;
 use std::fmt::Display;

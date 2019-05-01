@@ -8,6 +8,6 @@ edition = "2018"
 bzip2 = "0.3"
 cc = "1"
 dirs = "1"
-http_req = "0.4"
+ureq = { version = "0.9", default-features = false, features = ["tls"] }
 memchr = "2"
 tar = "0.4"
