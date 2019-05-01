@@ -4,6 +4,7 @@ use std::env;
 use std::fs::{self, File};
 use std::io;
 use std::path::{Path, PathBuf};
+use ureq::Response;
 
 use crate::{Version, util::RemoveFileHandle};
 
@@ -144,18 +145,26 @@ impl<'a> RubySrcDownloader<'a> {
     fn _download(version: Version, archive_path: &Path) -> Result<File, RubySrcDownloadError> {
         use RubySrcDownloadError::*;
 
+        let response = ureq::get(&version.url()).call();
+        if response.ok() {
+            Self::_read_response(response, archive_path).map_err(CreateArchive)
+        } else {
+            Err(RequestArchive(response))
+        }
+    }
+
+    fn _read_response(response: Response, archive_path: &Path) -> io::Result<File> {
+        let mut response = response.into_reader();
         let mut file = fs::OpenOptions::new()
             .read(true)
             .write(true)
             .create(true)
-            .open(archive_path)
-            .map_err(CreateArchive)?;
+            .open(archive_path)?;
 
-        let mut response = ureq::get(&version.url()).call().into_reader();
-        match io::copy(&mut response, &mut file) {
-            Ok(_) => Ok(file),
-            Err(error) => Err(RequestArchive(error)),
-        }
+        io::copy(&mut response, &mut file)?;
+        file.sync_data()?;
+
+        Ok(file)
     }
 
     fn _unpack(
@@ -180,10 +189,10 @@ pub enum RubySrcDownloadError {
     OpenArchive(io::Error),
     /// Failed to create a directory for the archive.
     CreateArchiveDir(io::Error),
-    /// Failed to create a file for the archive.
+    /// Failed to download the archive.
     CreateArchive(io::Error),
     /// Failed to GET the archive.
-    RequestArchive(io::Error),
+    RequestArchive(Response),
     /// Failed to unpack the `.tar.gz` archive.
     UnpackArchive(io::Error),
     /// Failed to create the destination directory.
