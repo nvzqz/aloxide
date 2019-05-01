@@ -196,6 +196,19 @@ impl Ruby {
         self._get_config(&key)
     }
 
+    /// Returns the directory containing the Ruby library's main header files.
+    #[inline]
+    pub fn header_dir(&self) -> Result<String, RubyExecError> {
+        self.get_config("rubyhdrdir")
+    }
+
+    /// Returns the directory containing the Ruby library's
+    /// architecture-specific header files.
+    #[inline]
+    pub fn arch_header_dir(&self) -> Result<String, RubyExecError> {
+        self.get_config("rubyarchhdrdir")
+    }
+
     /// Returns the value of `RbConfig::CONFIG['LIBRUBYARG']`.
     #[inline]
     pub fn lib_args(&self) -> Result<String, RubyExecError> {
