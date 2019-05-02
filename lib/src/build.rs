@@ -23,27 +23,51 @@ pub struct RubyBuilder {
 }
 
 impl RubyBuilder {
+    // Process `target` to make it usable with building for Windows
+    fn convert_to_ruby(target: &str) -> &str {
+        match target {
+            "x86_64-pc-windows-msvc" => "x84_64-mswin64",
+            "x86_64-pc-windows-gnu"  => "x86_64-pc-mingw32",
+            "i686-pc-windows-msvc"   => "x86-mswin32",
+            "i686-pc-windows-gnu"    => "x86-pc-mingw32",
+            other => other
+        }
+    }
+
+    // Process `target` to make it usable with `cc::windows_registry::find`
+    fn convert_to_rust(target: &str) -> &str {
+        if target.contains("mswin") {
+            if target.contains("64") {
+                "x86_64-pc-windows-msvc"
+            } else {
+                "i686-pc-windows-msvc"
+            }
+        } else {
+            target
+        }
+    }
+
     pub(crate) fn new(
         src_dir: PathBuf,
         out_dir: PathBuf,
         target: &str,
     ) -> Self {
-        let configure_path = if cfg!(target_os = "windows") {
-            let mut path = src_dir.join("win32");
-            path.push("configure.bat");
-            path
-        } else {
-            src_dir.join("configure")
+        let ruby_target = RubyBuilder::convert_to_ruby(target);
+        let rust_target = RubyBuilder::convert_to_rust(target);
+
+        let nmake = cc::windows_registry::find(rust_target, "nmake.exe");
+        let (mut make, configure_path) = match nmake {
+            Some(nmake) => {
+                let mut path = src_dir.join("win32");
+                path.push("configure.bat");
+                (nmake, path)
+            },
+            None => (Command::new("make"), src_dir.join("configure"))
         };
 
         let mut configure = Command::new(&configure_path);
         configure.arg(format!("--prefix={}", out_dir.display()));
-        configure.arg(format!("--target={}", target));
-
-        let mut make = match cc::windows_registry::find(target, "nmake.exe") {
-            Some(nmake) => nmake,
-            None => Command::new("make"),
-        };
+        configure.arg(format!("--target={}", ruby_target));
         make.arg("install");
         make.env("PREFIX", &out_dir);
 
