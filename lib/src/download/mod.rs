@@ -2,7 +2,7 @@
 
 use std::env;
 use std::fs::{self, File};
-use std::io;
+use std::io::{self, Seek, SeekFrom};
 use std::path::{Path, PathBuf};
 
 use bzip2::read::BzDecoder;
@@ -169,6 +169,7 @@ impl<'a> RubySrcDownloader<'a> {
 
         io::copy(&mut response, &mut file)?;
         file.sync_data()?;
+        file.seek(SeekFrom::Start(0))?;
 
         Ok(file)
     }
