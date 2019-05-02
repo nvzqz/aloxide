@@ -2,6 +2,7 @@ use std::ffi::OsString;
 use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
+use memchr::memchr;
 use tar::{Archive, EntryType, Header};
 
 pub fn unpack(
@@ -51,10 +52,9 @@ fn is_dir(header: &Header) -> bool {
 }
 
 fn ends_with_slash(name: &[u8; 100]) -> bool {
-    for (i, &byte) in name.iter().enumerate() {
-        if byte == 0 {
-            return name.get(i - 1) == Some(&b'/');
-        }
+    if let Some(i) = memchr(0, name) {
+        name.get(i - 1) == Some(&b'/')
+    } else {
+        false
     }
-    false
 }
