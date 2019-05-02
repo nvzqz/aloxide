@@ -17,8 +17,8 @@ fn main() {
 
     let manifest_dir = PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").unwrap());
     let aloxide = manifest_dir
-        .join("..")
-        .join("..")
+        .parent().unwrap()
+        .parent().unwrap()
         .join("target")
         .join("aloxide");
     assert!(aloxide.parent().unwrap().exists());
