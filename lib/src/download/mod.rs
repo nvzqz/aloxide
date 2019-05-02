@@ -4,9 +4,14 @@ use std::env;
 use std::fs::{self, File};
 use std::io;
 use std::path::{Path, PathBuf};
+
+use bzip2::read::BzDecoder;
+use tar::Archive;
 use ureq::Response;
 
 use crate::{Version, util::RemoveFileHandle};
+
+mod archive;
 
 /// Unpacks the contents of `archive` (a `.tar.bz2`) into `dst_dir`.
 #[inline]
@@ -14,7 +19,8 @@ pub fn unpack(
     archive: impl io::Read,
     dst_dir: impl AsRef<Path>,
 ) -> io::Result<()> {
-    tar::Archive::new(bzip2::read::BzDecoder::new(archive)).unpack(dst_dir)
+    let dst_dir = dst_dir.as_ref();
+    archive::unpack(Archive::new(&mut BzDecoder::new(archive)), dst_dir)
 }
 
 /// Downloads and unpacks Ruby's source code.
@@ -171,10 +177,7 @@ impl<'a> RubySrcDownloader<'a> {
         file: File,
         dst_dir: &Path,
     ) -> Result<(), RubySrcDownloadError> {
-        use RubySrcDownloadError::*;
-
-        fs::create_dir_all(dst_dir).map_err(CreateDstDir)?;
-        unpack(file, dst_dir).map_err(UnpackArchive)
+        unpack(file, dst_dir).map_err(RubySrcDownloadError::UnpackArchive)
     }
 }
 
@@ -195,6 +198,4 @@ pub enum RubySrcDownloadError {
     RequestArchive(Response),
     /// Failed to unpack the `.tar.gz` archive.
     UnpackArchive(io::Error),
-    /// Failed to create the destination directory.
-    CreateDstDir(io::Error),
 }

@@ -16,7 +16,7 @@ matrix:
 
 env:
   global:
-  - ALOXIDE_RUBY_VERSION: 2.6.3
+  - ALOXIDE_RUBY_VERSION: 2.6.0
   - ALOXIDE_RUBY_CACHE: "$HOME/.cache"
 
 cache:
