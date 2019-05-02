@@ -326,6 +326,24 @@ impl ConfigurePhase {
         self
     }
 
+    /// Sets the C compiler that Ruby should use.
+    #[inline]
+    pub fn cc(mut self, cc: impl Display) -> Self {
+        self.0.configure.arg(format!("CC={}", cc));
+        self
+    }
+
+    /// Sets whether Ruby should use the C compiler defined by the `CC`
+    /// environment variable.
+    #[inline]
+    pub fn inherit_cc(self) -> Self {
+        if let Some(cc) = std::env::var_os("CC") {
+            self.cc(PathBuf::from(cc).display())
+        } else {
+            self
+        }
+    }
+
     /// Include `feature`.
     #[inline]
     pub fn enable(mut self, feature: impl Display) -> Self {
