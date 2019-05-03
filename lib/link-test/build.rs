@@ -6,7 +6,7 @@ use std::process::Stdio;
 use aloxide::{Ruby, Version};
 
 fn main() {
-    let target = std::env::var("TARGET").unwrap();
+    let target = env::var("TARGET").unwrap();
 
     let version = match env::var("ALOXIDE_RUBY_VERSION") {
         Ok(ref version) if !version.is_empty() => {
@@ -15,7 +15,7 @@ fn main() {
         _ => Version::new(2, 6, 2),
     };
 
-    let manifest_dir = PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").unwrap());
+    let manifest_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
     let aloxide = manifest_dir
         .parent().unwrap()
         .parent().unwrap()
