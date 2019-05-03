@@ -1,4 +1,79 @@
-//! Utilities for downloading, configuring, compiling, and installing Ruby.
+//! <p align="center">
+//!   <a href="https://github.com/nvzqz/aloxide">
+//!     <img width="800" src="https://github.com/nvzqz/aloxide/raw/assets/aloxide_banner.svg?sanitize=true" alt="aloxide banner">
+//!   </a>
+//! </p>
+//!
+//!
+//! Download, configure, compile, and link to Ruby.
+//!
+//! # Usage
+//!
+//! This crate is available [on crates.io][crate] and can be used by adding the
+//! following to your project's [`Cargo.toml`]:
+//!
+//! ```toml
+//! [build-dependencies]
+//! aloxide = "0.0.1"
+//! ```
+//!
+//! _or_ if you're mental and would like to be on the latest and... um greatest
+//! (?), then you can depend directly on the GitHub repository:
+//!
+//! ```toml
+//! [build-dependencies]
+//! aloxide = { git = "https://github.com/nvzqz/aloxide" }
+//! ```
+//!
+//! and finally add this to your Cargo build script (`build.rs`):
+//!
+//! ```
+//! extern crate aloxide;
+//! # fn main() {}
+//! ```
+//!
+//! # Supported Platforms
+//!
+//! Currently, `aloxide` only supports Linux and macOS. See
+//! [issue #1](https://github.com/nvzqz/aloxide/issues/1) for more details.
+//!
+//! # Examples
+//!
+//! Given a directory of sources, Ruby can be built as such:
+//!
+//! ```rust,no_run
+//! use aloxide::Ruby;
+//!
+//! // When necessary, `rustc` targets are made build-compatible for Ruby
+//! let target = std::env::var("TARGET").unwrap();
+//!
+//! let src_dir = "path/to/sources";
+//! let out_dir = "path/to/build";
+//!
+//! let ruby = Ruby::builder(src_dir, out_dir, target)
+//!     .configure()      // Change what happens when running `configure`
+//!         .inherit_cc() // Use the `CC` environment variable
+//!     .make()           // Change what happens when running `make`
+//!         .force()      // Always run `make` regardless if sources built
+//!     .build()          // Run all build steps
+//!     .unwrap();
+//!
+//! let hello_world = ruby.run("puts 'Hello, World!").unwrap();
+//! assert_eq!(hello_world, "Hello, World!\n");
+//! ```
+//!
+//! Ruby can linked to the current crate very easily:
+//!
+//! ```rust,no_run
+//! # let ruby: aloxide::Ruby = unimplemented!();
+//! // Link Ruby statically
+//! if let Err(error) = ruby.link(true) {
+//!     // Handle `error`
+//! }
+//! ```
+//!
+//! [crate]: https://crates.io/crates/aloxide
+//! [`Cargo.toml`]: https://doc.rust-lang.org/cargo/reference/manifest.html
 
 #![deny(missing_docs)]
 

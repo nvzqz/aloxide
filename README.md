@@ -30,15 +30,13 @@ The plan for `aloxide` is to:
 
 ## Supported Platforms
 
+See [issue #1](https://github.com/nvzqz/aloxide/issues/1) for more details.
+
 - [x] Linux
 
 - [x] macOS
 
 - [ ] Windows
-
-  - [ ] [Microsoft Visual C (MSVC)][MSVC] toolchain
-
-  - [ ] [GNU Compiler Collection (GCC)][GCC] toolchain
 
 ## Cross-Compiling
 
@@ -54,6 +52,4 @@ This project is released under either:
 
 at your choosing.
 
-[CLI]:  https://en.wikipedia.org/wiki/Command-line_interface
-[MSVC]: https://en.wikipedia.org/wiki/MSVC
-[GCC]:  https://en.wikipedia.org/wiki/GNU_Compiler_Collection
+[CLI]: https://en.wikipedia.org/wiki/Command-line_interface
