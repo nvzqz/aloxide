@@ -1,6 +1,8 @@
-<a href="https://github.com/nvzqz/aloxide">
-  <img src="https://github.com/nvzqz/aloxide/raw/assets/aloxide_banner.png" alt="aloxide banner">
-</a>
+<p align="center">
+  <a href="https://github.com/nvzqz/aloxide">
+    <img width="800" src="https://github.com/nvzqz/aloxide/raw/assets/aloxide_banner.svg?sanitize=true" alt="aloxide banner">
+  </a>
+</p>
 
 Build Ruby for Linux, macOS, and Windows.
 
