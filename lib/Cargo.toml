@@ -1,8 +1,20 @@
 [package]
 name = "aloxide"
-version = "0.1.0"
-authors = ["Nikolai Vazquez"]
+version = "0.0.1"
 edition = "2018"
+authors = ["Nikolai Vazquez"]
+readme = "README.md"
+license = "MIT/Apache-2.0"
+homepage = "https://github.com/nvzqz/aloxide"
+repository = "https://github.com/nvzqz/aloxide"
+documentation = "https://docs.rs/aloxide"
+description = """
+A helper tool for Cargo build scripts (build.rs) for compiling and/or linking to
+a given Ruby library version for use in Rust code.
+"""
+keywords = ["build-dependencies", "ruby"]
+categories = ["development-tools::build-utils"]
+include = ["Cargo.toml", "src/**/*.rs", "README.md", "CHANGELOG.md", "LICENSE*"]
 
 [dependencies]
 bzip2 = "0.3"
