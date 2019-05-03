@@ -3,7 +3,7 @@
 use std::ffi::OsStr;
 use std::fmt::Display;
 use std::borrow::Borrow;
-use std::io::{self, Write};
+use std::io;
 use std::path::PathBuf;
 use std::process::{Command, Output, Stdio};
 
@@ -20,11 +20,6 @@ pub struct RubyBuilder {
     force_configure: bool,
     make: Command,
     force_make: bool,
-
-    // HACK: Spawn `configure` via `sh` since `Command::new` requires a Win32
-    // application to work
-    #[cfg(target_os = "windows")]
-    use_mingw_hack: bool,
 }
 
 impl RubyBuilder {
@@ -61,8 +56,6 @@ impl RubyBuilder {
         let rust_target = RubyBuilder::convert_to_rust(target);
 
         let nmake = cc::windows_registry::find(rust_target, "nmake.exe");
-        let use_mingw_hack = cfg!(target_os = "windows") && nmake.is_none();
-
         let (mut make, configure_path) = match nmake {
             Some(nmake) => {
                 let mut path = src_dir.join("win32");
@@ -75,13 +68,11 @@ impl RubyBuilder {
         make.arg("install");
         make.env("PREFIX", &out_dir);
 
-        let mut configure = if use_mingw_hack {
+        let mut configure = if cfg!(target_os = "windows") && nmake.is_none() {
+            // HACK: Spawn `configure` via `sh` since `Command::new` requires a
+            // Win32 application to work
             let mut sh = Command::new("sh.exe");
-            sh.stdin(Stdio::piped());
-            sh.stdout(Stdio::piped());
-            sh.stderr(Stdio::piped());
-            sh.arg("-s");
-            sh.arg("--");
+            sh.arg("configure");
             sh
         } else {
             Command::new(&configure_path)
@@ -100,8 +91,6 @@ impl RubyBuilder {
             force_configure: false,
             make,
             force_make: false,
-            #[cfg(target_os = "windows")]
-            use_mingw_hack,
         }
     }
 
@@ -127,12 +116,6 @@ impl RubyBuilder {
     pub fn build(mut self) -> Result<Ruby, RubyBuildError> {
         use RubyBuildError::*;
 
-        #[cfg(target_os = "windows")]
-        let use_mingw_hack = self.use_mingw_hack;
-
-        #[cfg(not(target_os = "windows"))]
-        let use_mingw_hack = false;
-
         macro_rules! phase {
             ($cmd:ident, $cond:expr, $fail:ident, $spawn_fail:ident) => (
                 if $cond {
@@ -157,31 +140,7 @@ impl RubyBuilder {
         };
 
         let run_configure = run_autoconf || self.force_configure || !self.src_dir.join("Makefile").exists();
-        if use_mingw_hack && run_configure {
-            let sh = &mut self.configure;
-            sh.current_dir(&self.src_dir);
-
-            let mut child = sh.spawn().map_err(ConfigureSpawnFail)?;
-
-            if let Some(stdin) = child.stdin.as_mut() {
-                stdin.write_all(b"./configure \"$@\"")
-                    .map_err(ConfigureSpawnFail)?;
-            } else {
-                let error = "Failed to get `stdin` handle for `sh`";
-                let error = io::Error::new(io::ErrorKind::Other, error);
-                return Err(ConfigureSpawnFail(error));
-            }
-
-            let output = child
-                .wait_with_output()
-                .map_err(ConfigureSpawnFail)?;
-
-            if !output.status.success() {
-                return Err(ConfigureFail(output));
-            }
-        } else {
-            phase!(configure, run_configure, ConfigureFail, ConfigureSpawnFail);
-        }
+        phase!(configure, run_configure, ConfigureFail, ConfigureSpawnFail);
 
         let mut bin_path = self.out_dir.join("bin");
         if cfg!(target_os = "windows") {
