@@ -78,8 +78,8 @@ impl RubyBuilder {
             Command::new(&configure_path)
         };
 
-        configure.arg(format!("--prefix='{}'", out_dir.display()));
-        configure.arg(format!("--target='{}'", ruby_target));
+        configure.arg(format!("--prefix={}", out_dir.display()));
+        configure.arg(format!("--target={}", ruby_target));
 
         RubyBuilder {
             src_dir,
