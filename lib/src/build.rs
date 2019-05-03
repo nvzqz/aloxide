@@ -20,6 +20,9 @@ pub struct RubyBuilder {
     force_configure: bool,
     make: Command,
     force_make: bool,
+
+    #[cfg(windows)]
+    target_msvc: bool,
 }
 
 impl RubyBuilder {
@@ -56,6 +59,8 @@ impl RubyBuilder {
         let rust_target = RubyBuilder::convert_to_rust(target);
 
         let nmake = cc::windows_registry::find(rust_target, "nmake.exe");
+        let target_msvc = cfg!(target_os = "windows") && nmake.is_some();
+
         let (mut make, configure_path) = match nmake {
             Some(nmake) => {
                 let mut path = src_dir.join("win32");
@@ -68,7 +73,7 @@ impl RubyBuilder {
         make.arg("install");
         make.env("PREFIX", &out_dir);
 
-        let mut configure = if cfg!(target_os = "windows") && nmake.is_none() {
+        let mut configure = if cfg!(target_os = "windows") && !target_msvc {
             // HACK: Spawn `configure` via `sh` since `Command::new` requires a
             // Win32 application to work
             let mut sh = Command::new("sh.exe");
@@ -91,6 +96,9 @@ impl RubyBuilder {
             force_configure: false,
             make,
             force_make: false,
+
+            #[cfg(windows)]
+            target_msvc,
         }
     }
 
@@ -116,6 +124,12 @@ impl RubyBuilder {
     pub fn build(mut self) -> Result<Ruby, RubyBuildError> {
         use RubyBuildError::*;
 
+        #[cfg(target_os = "windows")]
+        let target_msvc = self.target_msvc;
+
+        #[cfg(not(target_os = "windows"))]
+        let target_msvc = false;
+
         macro_rules! phase {
             ($cmd:ident, $cond:expr, $fail:ident, $spawn_fail:ident) => (
                 if $cond {
@@ -131,7 +145,7 @@ impl RubyBuilder {
             )
         }
 
-        let run_autoconf = if cfg!(target_os = "windows") {
+        let run_autoconf = if target_msvc {
             false
         } else {
             let run_autoconf = self.force_autoconf || !self.configure_path.exists();
