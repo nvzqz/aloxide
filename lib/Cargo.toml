@@ -20,6 +20,15 @@ include = ["Cargo.toml", "src/**/*.rs", "README.md", "CHANGELOG.md", "LICENSE*"]
 bzip2 = "0.3"
 cc = "1"
 dirs = "1"
-ureq = { version = "0.9", default-features = false, features = ["tls"] }
 memchr = "2"
 tar = "0.4"
+
+[dependencies.ureq]
+version = "0.9"
+default-features = false
+features = ["tls"]
+optional = true
+
+[features]
+default = ["download"]
+download = ["ureq"]

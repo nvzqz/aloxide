@@ -82,6 +82,8 @@ extern crate cc;
 extern crate dirs;
 extern crate memchr;
 extern crate tar;
+
+#[cfg(feature = "ureq")]
 extern crate ureq;
 
 use std::ffi::OsStr;
@@ -91,21 +93,20 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
 use std::string::FromUtf8Error;
 
+mod archive;
 mod link;
-mod util;
 pub mod build;
-pub mod download;
 pub mod version;
 
-use self::{
-    build::RubyBuildError,
-    download::RubySrcDownloadError,
-};
+#[cfg(feature = "download")] pub mod download;
+#[cfg(feature = "download")] pub use download::RubySrcDownloader;
+
+use build::RubyBuildError;
 
 #[doc(inline)]
 pub use self::{
+    archive::Archive,
     build::RubyBuilder,
-    download::RubySrcDownloader,
     link::*,
     version::Version,
 };
@@ -126,6 +127,7 @@ pub struct Ruby {
 impl Ruby {
     /// Returns a new Ruby source code downloader.
     #[inline]
+    #[cfg(feature = "download")]
     pub fn src_downloader<'a, P: AsRef<Path> + ?Sized>(
         version: Version,
         dst_dir: &'a P,
@@ -136,10 +138,11 @@ impl Ruby {
     /// Downloads and unpacks the source for `version` to `dst_dir` with the
     /// default configuration.
     #[inline]
+    #[cfg(feature = "download")]
     pub fn download_src(
         version: Version,
         dst_dir: impl AsRef<Path>,
-    ) -> Result<PathBuf, RubySrcDownloadError> {
+    ) -> Result<PathBuf, download::RubySrcDownloadError> {
         Self::src_downloader(version, dst_dir.as_ref()).download()
     }
 

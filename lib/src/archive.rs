@@ -3,10 +3,28 @@ use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
 use memchr::memchr;
-use tar::{Archive, EntryType, Header};
+use tar::{Archive as Tar, EntryType, Header};
+use bzip2::read::BzDecoder as Bz;
 
-pub fn unpack(
-    mut archive: Archive<&mut dyn io::Read>,
+/// A type that contains the contents of a `.tar.bz2` archive.
+pub trait Archive: io::Read {
+    /// Attempts to unpack the contents of `self` as a `.tar.bz2` archive into
+    /// `dst_dir`.
+    ///
+    /// Certain Ruby archives are packaged incorrectly and so this works to get
+    /// around that issue.
+    fn unpack(&mut self, dst_dir: impl AsRef<Path>) -> io::Result<()>;
+}
+
+impl<R: io::Read> Archive for R {
+    #[inline]
+    fn unpack(&mut self, dst_dir: impl AsRef<Path>) -> io::Result<()> {
+        _unpack(Tar::new(Bz::new(self)), dst_dir.as_ref())
+    }
+}
+
+fn _unpack(
+    mut archive: Tar<Bz<&mut dyn io::Read>>,
     dst_dir: &Path,
 ) -> io::Result<()> {
     let entries = archive.entries()?.raw(true);

@@ -5,23 +5,9 @@ use std::fs::{self, File};
 use std::io::{self, Seek, SeekFrom};
 use std::path::{Path, PathBuf};
 
-use bzip2::read::BzDecoder;
-use tar::Archive;
 use ureq::Response;
 
-use crate::{Version, util::RemoveFileHandle};
-
-mod archive;
-
-/// Unpacks the contents of `archive` (a `.tar.bz2`) into `dst_dir`.
-#[inline]
-pub fn unpack(
-    archive: impl io::Read,
-    dst_dir: impl AsRef<Path>,
-) -> io::Result<()> {
-    let dst_dir = dst_dir.as_ref();
-    archive::unpack(Archive::new(&mut BzDecoder::new(archive)), dst_dir)
-}
+use crate::{Archive, Version};
 
 /// Downloads and unpacks Ruby's source code.
 pub struct RubySrcDownloader<'a> {
@@ -136,13 +122,14 @@ impl<'a> RubySrcDownloader<'a> {
 
         let archive_exists = archive_path.exists();
 
-        let file = if ignore_existing || !archive_exists {
+        let mut file = if ignore_existing || !archive_exists {
             Self::_download(self.version, &archive_path)?
         } else {
             File::open(&archive_path).map_err(OpenArchive)?
         };
 
-        Self::_unpack(file, &self.dst_dir)?;
+        file.unpack(&self.dst_dir)
+            .map_err(RubySrcDownloadError::UnpackArchive)?;
 
         drop(remove_archive);
         Ok(src_dir)
@@ -173,13 +160,6 @@ impl<'a> RubySrcDownloader<'a> {
 
         Ok(file)
     }
-
-    fn _unpack(
-        file: File,
-        dst_dir: &Path,
-    ) -> Result<(), RubySrcDownloadError> {
-        unpack(file, dst_dir).map_err(RubySrcDownloadError::UnpackArchive)
-    }
 }
 
 /// The error returned when
@@ -199,4 +179,13 @@ pub enum RubySrcDownloadError {
     RequestArchive(Response),
     /// Failed to unpack the `.tar.gz` archive.
     UnpackArchive(io::Error),
+}
+
+// Removes `file` when an instance goes out of scope
+struct RemoveFileHandle<'p> { file: &'p Path }
+
+impl Drop for RemoveFileHandle<'_> {
+    fn drop(&mut self) {
+        let _ = fs::remove_file(self.file);
+    }
 }
