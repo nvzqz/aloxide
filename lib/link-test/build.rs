@@ -42,6 +42,7 @@ fn main() {
             .stdout(Stdio::inherit())
             .stderr(Stdio::inherit())
         .configure()
+            .inherit_cc()
             .disable_install_doc()
             .stdout(Stdio::inherit())
             .stderr(Stdio::inherit())
