@@ -39,9 +39,10 @@ fn main() {
         downloader = downloader.cache_dir(cache);
     }
 
-    let ruby = downloader.cache()
+    let ruby = downloader
+        .cache()
         .download()
-        .expect("Failed to download Ruby")
+        .expect(&format!("Failed to download Ruby {}", version))
         .builder(out_dir, target)
         .autoconf()
             .stdout(Stdio::inherit())
@@ -55,7 +56,7 @@ fn main() {
             .stdout(Stdio::inherit())
             .stderr(Stdio::inherit())
         .build()
-        .expect("Failed to build Ruby");
+        .expect(&format!("Failed to build Ruby {}", version));
 
     println!("{}", ruby.run("require 'pp'; pp RbConfig::CONFIG").unwrap());
 
