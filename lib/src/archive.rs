@@ -16,15 +16,15 @@ pub trait Archive: io::Read {
     fn unpack(&mut self, dst_dir: impl AsRef<Path>) -> io::Result<()>;
 }
 
-impl<R: io::Read> Archive for R {
+impl<R: io::Read + ?Sized> Archive for R {
     #[inline]
     fn unpack(&mut self, dst_dir: impl AsRef<Path>) -> io::Result<()> {
-        _unpack(Tar::new(Bz::new(self)), dst_dir.as_ref())
+        _unpack(Tar::new(&mut Bz::new(self)), dst_dir.as_ref())
     }
 }
 
 fn _unpack(
-    mut archive: Tar<Bz<&mut dyn io::Read>>,
+    mut archive: Tar<&mut dyn io::Read>,
     dst_dir: &Path,
 ) -> io::Result<()> {
     let entries = archive.entries()?.raw(true);
