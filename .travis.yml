@@ -20,11 +20,14 @@ env:
   global:
   - ALOXIDE_RUBY_VERSION: 2.6.0
   - ALOXIDE_RUBY_CACHE: "$HOME/.cache"
+  - ALOXIDE_TEST_DIR: "$HOME/.aloxide"
+  - CARGO_TARGET_DIR: "$PWD/target"
 
 cache:
   directories:
   - $HOME/.cargo
   - $ALOXIDE_RUBY_CACHE
+  - $CARGO_TARGET_DIR
 
 before_script:
 - cargo -Vv
