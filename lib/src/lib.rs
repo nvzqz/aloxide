@@ -276,6 +276,12 @@ impl Ruby {
         self._get_config(&key)
     }
 
+    /// Returns the `include` directory.
+    #[inline]
+    pub fn include_dir(&self) -> Result<String, RubyExecError> {
+        self.get_config("includedir")
+    }
+
     /// Returns the directory containing the Ruby library's main header files.
     #[inline]
     pub fn header_dir(&self) -> Result<String, RubyExecError> {
