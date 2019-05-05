@@ -87,7 +87,7 @@ extern crate tar;
 extern crate ureq;
 
 use std::ffi::OsStr;
-use std::fmt::Display;
+use std::fmt::{self, Display};
 use std::io;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
@@ -310,18 +310,42 @@ impl Ruby {
 /// The error returned when running `ruby` fails.
 #[derive(Debug)]
 pub enum RubyExecError {
-    /// An IO error occurred when executing `ruby`.
-    Io(io::Error),
+    /// An I/O error occurred when executing `ruby`.
+    ExecFail(io::Error),
     /// The `ruby` executable exited with a failure.
     RunFail(Output),
     /// The output of the config key is not encoded as UTF-8.
     Utf8Error(FromUtf8Error),
 }
 
+impl std::error::Error for RubyExecError {}
+
+impl Display for RubyExecError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            RubyExecError::ExecFail(error) => error.fmt(f),
+            RubyExecError::RunFail(_) => {
+                write!(f, "Failed to execute `ruby`")
+            },
+            RubyExecError::Utf8Error(error) => error.fmt(f),
+        }
+    }
+}
+
 impl From<io::Error> for RubyExecError {
     #[inline]
     fn from(error: io::Error) -> Self {
-        RubyExecError::Io(error)
+        RubyExecError::ExecFail(error)
+    }
+}
+
+impl From<RubyExecError> for io::Error {
+    #[inline]
+    fn from(error: RubyExecError) -> Self {
+        match error {
+            RubyExecError::ExecFail(error) => error,
+            error => io::Error::new(io::ErrorKind::Other, error)
+        }
     }
 }
 
