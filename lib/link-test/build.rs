@@ -15,13 +15,20 @@ fn main() {
         _ => Version::new(2, 6, 2),
     };
 
-    let manifest_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
-    let aloxide = manifest_dir
-        .parent().unwrap()
-        .parent().unwrap()
-        .join("target")
-        .join("aloxide");
-    assert!(aloxide.parent().unwrap().exists());
+    let aloxide = match env::var_os("ALOXIDE_TEST_DIR") {
+        Some(dir) => PathBuf::from(dir),
+        None => {
+            match env::var_os("CARGO_TARGET_DIR") {
+                Some(dir) => PathBuf::from(dir),
+                None => {
+                    PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap())
+                        .parent().unwrap()
+                        .parent().unwrap()
+                        .join("target")
+                }
+            }.join("aloxide")
+        }
+    };
 
     let target_dir = aloxide.join(&target);
     let out_dir = target_dir.join(&format!("ruby-{}-out", version));
