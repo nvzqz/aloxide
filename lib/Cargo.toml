@@ -22,6 +22,7 @@ cc = "1"
 dirs = "1"
 memchr = "2"
 tar = "0.4"
+walkdir = "2"
 
 [dependencies.ureq]
 version = "0.9"

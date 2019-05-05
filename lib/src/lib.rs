@@ -83,6 +83,7 @@ extern crate cc;
 extern crate dirs;
 extern crate memchr;
 extern crate tar;
+extern crate walkdir;
 
 #[cfg(feature = "ureq")]
 extern crate ureq;
@@ -93,6 +94,8 @@ use std::io;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
 use std::string::FromUtf8Error;
+
+use walkdir::{WalkDir, DirEntry};
 
 mod archive;
 mod link;
@@ -257,6 +260,31 @@ impl Ruby {
     pub fn link(&self, static_lib: bool) -> Result<(), RubyLinkError> {
         link::link(self, static_lib)
     }
+
+    /// Iterates over the header directory entries for the Ruby library.
+    pub fn with_header_entries<F>(&self, mut f: F) -> io::Result<()>
+        where F: FnMut(DirEntry) -> ()
+    {
+        for entry in WalkDir::new(self.include_dir()?) {
+            let entry = entry?;
+            if entry.path().extension() == Some("h".as_ref()) {
+                f(entry);
+            }
+        }
+        Ok(())
+    }
+
+    /// Iterates over the header directory paths for the Ruby library.
+    pub fn with_headers<F: FnMut(PathBuf)>(&self, mut f: F) -> io::Result<()> {
+        self.with_header_entries(|entry| f(entry.into_path()))
+    }
+
+    /// Returns all header paths for the Ruby library.
+    pub fn headers(&self) -> io::Result<Vec<PathBuf>> {
+        let mut headers = Vec::new();
+        self.with_headers(|header| headers.push(header))?;
+        Ok(headers)
+    }
 }
 
 /// The error returned when running `ruby` fails.
@@ -318,4 +346,3 @@ impl RubyExecError {
         }
     }
 }
-
