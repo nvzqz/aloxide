@@ -50,7 +50,8 @@
 //! let src_dir = "path/to/sources";
 //! let out_dir = "path/to/build";
 //!
-//! let ruby = Ruby::builder(src_dir, out_dir, target)
+//! let ruby = Ruby::src(src_dir)
+//!     .builder(out_dir, target)
 //!     .configure()      // Change what happens when running `configure`
 //!         .inherit_cc() // Use the `CC` environment variable
 //!     .make()           // Change what happens when running `make`
@@ -95,19 +96,16 @@ use std::string::FromUtf8Error;
 
 mod archive;
 mod link;
-pub mod build;
+pub mod src;
 pub mod version;
 
-#[cfg(feature = "download")] pub mod download;
-#[cfg(feature = "download")] pub use download::RubySrcDownloader;
-
-use build::RubyBuildError;
+use version::RubyVersionError;
 
 #[doc(inline)]
 pub use self::{
     archive::Archive,
-    build::RubyBuilder,
     link::*,
+    src::RubySrc,
     version::Version,
 };
 
@@ -118,66 +116,44 @@ pub use self::{
 #[derive(Debug)]
 pub struct Ruby {
     version: Version,
-    src_dir: PathBuf,
     out_dir: PathBuf,
     lib_path: PathBuf,
     bin_path: PathBuf,
 }
 
 impl Ruby {
-    /// Returns a new Ruby source code downloader.
+    /// Returns a `RubySrc` instance that can be used to download and build Ruby
+    /// sources at `path`.
     #[inline]
-    #[cfg(feature = "download")]
-    pub fn src_downloader<'a, P: AsRef<Path> + ?Sized>(
-        version: Version,
-        dst_dir: &'a P,
-    ) -> RubySrcDownloader<'a> {
-        RubySrcDownloader::new(version, dst_dir.as_ref())
-    }
-
-    /// Downloads and unpacks the source for `version` to `dst_dir` with the
-    /// default configuration.
-    #[inline]
-    #[cfg(feature = "download")]
-    pub fn download_src(
-        version: Version,
-        dst_dir: impl AsRef<Path>,
-    ) -> Result<PathBuf, download::RubySrcDownloadError> {
-        Self::src_downloader(version, dst_dir.as_ref()).download()
-    }
-
-    /// Returns a new Ruby builder.
-    #[inline]
-    pub fn builder(
-        src_dir: impl Into<PathBuf>,
-        out_dir: impl Into<PathBuf>,
-        target: impl AsRef<str>,
-    ) -> RubyBuilder {
-        RubyBuilder::new(src_dir.into(), out_dir.into(), target.as_ref())
-    }
-
-    /// Builds Ruby with the default configuration.
-    #[inline]
-    pub fn build(
-        src_dir: impl Into<PathBuf>,
-        out_dir: impl Into<PathBuf>,
-        target: impl AsRef<str>,
-    ) -> Result<Self, RubyBuildError> {
-        Self::builder(src_dir, out_dir, target).build()
+    pub fn src<P: AsRef<Path> + ?Sized>(path: &P) -> &RubySrc {
+        RubySrc::new(path)
     }
 
     /// Creates a new instance without doing anything.
     #[inline]
     pub fn new(
         version: Version,
-        src_dir: impl Into<PathBuf>,
         out_dir: impl Into<PathBuf>,
     ) -> Ruby {
-        let src_dir = src_dir.into();
         let out_dir = out_dir.into();
         let lib_path = out_dir.join("lib");
-        let bin_path = out_dir.join("bin").join("ruby");
-        Ruby { version, src_dir, out_dir, lib_path, bin_path }
+
+        let mut bin_path = out_dir.join("bin");
+        if cfg!(target_os = "windows") {
+            bin_path.push("ruby.exe");
+        } else {
+            bin_path.push("ruby");
+        }
+
+        Ruby { version, out_dir, lib_path, bin_path }
+    }
+
+    /// Creates a new instance, finding out the version by running the `ruby`
+    /// executable in `out_dir`.
+    pub fn from_path(out_dir: impl Into<PathBuf>) -> Result<Ruby, RubyVersionError> {
+        let mut ruby = Ruby::new(Version::new(0, 0, 0), out_dir);
+        ruby.version = Version::from_ruby(&ruby.bin_path)?;
+        Ok(ruby)
     }
 
     /// Returns the Ruby version.
@@ -191,12 +167,6 @@ impl Ruby {
         self.exec(Some("-v"))
     }
 
-    /// The directory of Ruby's source code.
-    #[inline]
-    pub fn src_dir(&self) -> &Path {
-        &self.src_dir
-    }
-
     /// The directory of Ruby's installed files.
     #[inline]
     pub fn out_dir(&self) -> &Path {
@@ -207,24 +177,6 @@ impl Ruby {
     #[inline]
     pub fn bin_path(&self) -> &Path {
         &self.bin_path
-    }
-
-    /// Returns the output of `make` with `args`.
-    pub fn make<I, S>(&self, args: I) -> io::Result<Output>
-    where
-        I: IntoIterator<Item=S>,
-        S: AsRef<OsStr>,
-    {
-        Command::new("make")
-            .args(args)
-            .current_dir(self.src_dir())
-            .output()
-    }
-
-    /// Returns the output of `make check`, which checks whether the compiled
-    /// Ruby interpreter works well.
-    pub fn check(&self) -> io::Result<Output> {
-        self.make(&["check"])
     }
 
     /// Executes the `ruby` binary at `bin_path` with `args`.
@@ -357,7 +309,7 @@ impl From<FromUtf8Error> for RubyExecError {
 }
 
 impl RubyExecError {
-    fn process(command: &mut Command) -> Result<String, Self> {
+    pub(crate) fn process(command: &mut Command) -> Result<String, Self> {
         let output = command.output()?;
         if output.status.success() {
             Ok(String::from_utf8(output.stdout)?)

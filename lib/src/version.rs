@@ -1,9 +1,13 @@
 //! Ruby versions.
 
 use std::convert::TryFrom;
+use std::ffi::OsStr;
 use std::fmt;
 use std::num::ParseIntError;
+use std::process::Command;
 use std::str::FromStr;
+
+use crate::RubyExecError;
 
 /// A simple Ruby version.
 #[derive(Clone, Copy, Debug)]
@@ -73,6 +77,18 @@ impl Version {
     #[inline]
     pub fn new(major: u16, minor: u16, teeny: u16) -> Self {
         Version { major, minor, teeny }
+    }
+
+    fn _from_ruby(ruby_exe: &OsStr) -> Result<Self, RubyVersionError> {
+        let mut ruby = Command::new(ruby_exe);
+        ruby.args(&["-e", "print RbConfig::CONFIG['RUBY_PROGRAM_VERSION']"]);
+        Ok(RubyExecError::process(&mut ruby)?.parse()?)
+    }
+
+    /// Attempts to get the version of a `ruby` executable.
+    #[inline]
+    pub fn from_ruby(ruby_exe: impl AsRef<OsStr>) -> Result<Self, RubyVersionError> {
+        Self::_from_ruby(ruby_exe.as_ref())
     }
 
     /// Returns a parser that can be used to construct a `Version` out of a
@@ -208,4 +224,27 @@ pub enum VersionParseError {
     MinorInt(ParseIntError),
     /// Invalid 'x.y.Z'.
     TeenyInt(ParseIntError),
+}
+
+/// Failed to get a Ruby version from a `ruby` executable.
+#[derive(Debug)]
+pub enum RubyVersionError {
+    /// Failed to spawn a process for `ruby`.
+    Exec(RubyExecError),
+    /// Failed to parse the Ruby version as a `Version`.
+    Parse(VersionParseError),
+}
+
+impl From<RubyExecError> for RubyVersionError {
+    #[inline]
+    fn from(error: RubyExecError) -> Self {
+        RubyVersionError::Exec(error)
+    }
+}
+
+impl From<VersionParseError> for RubyVersionError {
+    #[inline]
+    fn from(error: VersionParseError) -> Self {
+        RubyVersionError::Parse(error)
+    }
 }

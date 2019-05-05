@@ -7,7 +7,7 @@ use std::path::{Path, PathBuf};
 
 use ureq::Response;
 
-use crate::{Archive, Version};
+use crate::{Archive, RubySrc, Version};
 
 /// Downloads and unpacks Ruby's source code.
 pub struct RubySrcDownloader<'a> {
@@ -70,7 +70,7 @@ impl<'a> RubySrcDownloader<'a> {
     /// Downloads and returns the directory containing the Ruby sources.
     ///
     /// If `skip_unpack` is set, the returned path is that of the archive.
-    pub fn download(self) -> Result<PathBuf, RubySrcDownloadError> {
+    pub fn download(self) -> Result<Box<RubySrc>, RubySrcDownloadError> {
         use RubySrcDownloadError::*;
 
         let archive_name = self.version.archive_name();
@@ -85,7 +85,7 @@ impl<'a> RubySrcDownloader<'a> {
 
         if !self.ignore_existing_dir && src_dir.exists() {
             // Reuse the existing sources
-            return Ok(src_dir);
+            return Ok(src_dir.into());
         }
 
         let new_archive_dir: PathBuf;
@@ -132,7 +132,7 @@ impl<'a> RubySrcDownloader<'a> {
             .map_err(RubySrcDownloadError::UnpackArchive)?;
 
         drop(remove_archive);
-        Ok(src_dir)
+        Ok(src_dir.into())
     }
 
     fn _download(version: Version, archive_path: &Path) -> Result<File, RubySrcDownloadError> {

@@ -3,7 +3,7 @@ extern crate aloxide;
 use std::env;
 use std::path::PathBuf;
 use std::process::Stdio;
-use aloxide::{Ruby, Version};
+use aloxide::{RubySrc, Version};
 
 fn main() {
     let target = env::var("TARGET").unwrap();
@@ -26,18 +26,16 @@ fn main() {
     let target_dir = aloxide.join(&target);
     let out_dir = target_dir.join(&format!("ruby-{}-out", version));
 
-    println!("Downloading Ruby {} into '{}'", version, target_dir.display());
-
     let cache = env::var_os("ALOXIDE_RUBY_CACHE");
-    let mut downloader = Ruby::src_downloader(version, &target_dir);
+    let mut downloader = RubySrc::downloader(version, &target_dir);
     if let Some(cache) = &cache {
         downloader = downloader.cache_dir(cache);
     }
-    let src_dir = downloader.cache().download().unwrap();
 
-    println!("Compiling sources in '{}' to '{}'", src_dir.display(), out_dir.display());
-
-    let ruby = Ruby::builder(&src_dir, &out_dir, target)
+    let ruby = downloader.cache()
+        .download()
+        .expect("Failed to download Ruby")
+        .builder(out_dir, target)
         .autoconf()
             .stdout(Stdio::inherit())
             .stderr(Stdio::inherit())
@@ -50,7 +48,7 @@ fn main() {
             .stdout(Stdio::inherit())
             .stderr(Stdio::inherit())
         .build()
-        .unwrap();
+        .expect("Failed to build Ruby");
 
     println!("{}", ruby.run("require 'pp'; pp RbConfig::CONFIG").unwrap());
 

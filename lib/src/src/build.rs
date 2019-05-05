@@ -7,11 +7,11 @@ use std::io;
 use std::path::PathBuf;
 use std::process::{Command, Output, Stdio};
 
-use crate::{Ruby, version::{Version, VersionParseError}};
+use crate::{Ruby, RubySrc, version::RubyVersionError};
 
 /// Configures and builds Ruby.
-pub struct RubyBuilder {
-    src_dir: PathBuf,
+pub struct RubyBuilder<'a> {
+    src: &'a RubySrc,
     out_dir: PathBuf,
     autoconf: Command,
     force_autoconf: bool,
@@ -25,7 +25,7 @@ pub struct RubyBuilder {
     target_msvc: bool,
 }
 
-impl RubyBuilder {
+impl<'a> RubyBuilder<'a> {
     // Process `target` to make it usable with building for Windows
     fn convert_to_ruby(target: &str) -> &str {
         match target {
@@ -51,10 +51,11 @@ impl RubyBuilder {
     }
 
     pub(crate) fn new(
-        src_dir: PathBuf,
+        src: &'a RubySrc,
         out_dir: PathBuf,
         target: &str,
     ) -> Self {
+        let src_dir = src.as_path();
         let ruby_target = RubyBuilder::convert_to_ruby(target);
         let rust_target = RubyBuilder::convert_to_rust(target);
 
@@ -87,7 +88,7 @@ impl RubyBuilder {
         configure.arg(format!("--target={}", ruby_target));
 
         RubyBuilder {
-            src_dir,
+            src,
             out_dir,
             autoconf: Command::new("autoconf"),
             force_autoconf: false,
@@ -104,25 +105,26 @@ impl RubyBuilder {
 
     /// Adjust what happens when running `autoconf`.
     #[inline]
-    pub fn autoconf(self) -> AutoconfPhase {
+    pub fn autoconf(self) -> AutoconfPhase<'a> {
         AutoconfPhase(self)
     }
 
     /// Adjust what happens when running `configure`.
     #[inline]
-    pub fn configure(self) -> ConfigurePhase {
+    pub fn configure(self) -> ConfigurePhase<'a> {
         ConfigurePhase(self)
     }
 
     /// Adjust what happens when running `make`.
     #[inline]
-    pub fn make(self) -> MakePhase {
+    pub fn make(self) -> MakePhase<'a> {
         MakePhase(self)
     }
 
     /// Performs the required build steps for Ruby in one go.
     pub fn build(mut self) -> Result<Ruby, RubyBuildError> {
         use RubyBuildError::*;
+        use crate::Version;
 
         #[cfg(target_os = "windows")]
         let target_msvc = self.target_msvc;
@@ -134,7 +136,7 @@ impl RubyBuilder {
             ($cmd:ident, $cond:expr, $fail:ident, $spawn_fail:ident) => (
                 if $cond {
                     let output = self.$cmd
-                        .current_dir(&self.src_dir)
+                        .current_dir(&self.src)
                         .output()
                         .map_err($spawn_fail)?;
 
@@ -153,7 +155,9 @@ impl RubyBuilder {
             run_autoconf
         };
 
-        let run_configure = run_autoconf || self.force_configure || !self.src_dir.join("Makefile").exists();
+        let src_dir = self.src.as_path();
+
+        let run_configure = run_autoconf || self.force_configure || !src_dir.join("Makefile").exists();
         phase!(configure, run_configure, ConfigureFail, ConfigureSpawnFail);
 
         let mut bin_path = self.out_dir.join("bin");
@@ -166,24 +170,11 @@ impl RubyBuilder {
         let run_make = run_configure || self.force_make || !bin_path.exists();
         phase!(make, run_make, MakeFail, MakeSpawnFail);
 
-        let mut ruby_version = Command::new(&bin_path);
-        ruby_version.args(&["-e", "print RbConfig::CONFIG['RUBY_PROGRAM_VERSION']"]);
-
-        let version = match ruby_version.output() {
-            Ok(output) => match String::from_utf8(output.stdout) {
-                Ok(utf8) => match utf8.parse::<Version>() {
-                    Ok(version) => version,
-                    Err(error) => return Err(RubyVersionParseFail(error)),
-                },
-                Err(error) => return Err(RubyVersionUtf8Fail(error)),
-            },
-            Err(error) => return Err(RubySpawnFail(error)),
-        };
+        let version = Version::from_ruby(&bin_path)?;
 
         let lib_path = self.out_dir.join("lib");
         Ok(Ruby {
             version,
-            src_dir: self.src_dir,
             out_dir: self.out_dir,
             lib_path,
             bin_path,
@@ -194,9 +185,9 @@ impl RubyBuilder {
 /// Adjusts what happens when running `autoconf`.
 ///
 /// **Note:** On the MSVC target platform, `autoconf` is not run.
-pub struct AutoconfPhase(RubyBuilder);
+pub struct AutoconfPhase<'a>(RubyBuilder<'a>);
 
-impl AutoconfPhase {
+impl<'a> AutoconfPhase<'a> {
     /// Force `autoconf` to run if applicable.
     #[inline]
     pub fn force(mut self) -> Self {
@@ -268,13 +259,13 @@ impl AutoconfPhase {
 
     /// Adjust what happens when running `configure`.
     #[inline]
-    pub fn configure(self) -> ConfigurePhase {
+    pub fn configure(self) -> ConfigurePhase<'a> {
         ConfigurePhase(self.0)
     }
 
     /// Adjust what happens when running `make`.
     #[inline]
-    pub fn make(self) -> MakePhase {
+    pub fn make(self) -> MakePhase<'a> {
         MakePhase(self.0)
     }
 
@@ -289,9 +280,9 @@ impl AutoconfPhase {
 ///
 /// **Note:** On the MSVC target platform, `win32/configure.bat` is run instead
 /// of `configure`.
-pub struct ConfigurePhase(RubyBuilder);
+pub struct ConfigurePhase<'a>(RubyBuilder<'a>);
 
-impl ConfigurePhase {
+impl<'a> ConfigurePhase<'a> {
     /// Force `configure` to run.
     #[inline]
     pub fn force(mut self) -> Self {
@@ -460,7 +451,7 @@ impl ConfigurePhase {
 
     /// Adjust what happens when running `make`.
     #[inline]
-    pub fn make(self) -> MakePhase {
+    pub fn make(self) -> MakePhase<'a> {
         MakePhase(self.0)
     }
 
@@ -474,9 +465,9 @@ impl ConfigurePhase {
 /// Adjusts what happens when running `make install`.
 ///
 /// **Note:** On the MSVC target platform, `nmake` is used instead of `make`.
-pub struct MakePhase(RubyBuilder);
+pub struct MakePhase<'a>(RubyBuilder<'a>);
 
-impl MakePhase {
+impl MakePhase<'_> {
     /// Force `make install` to run.
     #[inline]
     pub fn force(mut self) -> Self {
@@ -569,10 +560,13 @@ pub enum RubyBuildError {
     MakeSpawnFail(io::Error),
     /// `make` exited unsuccessfully.
     MakeFail(Output),
-    /// Failed to spawn a process for `ruby`.
-    RubySpawnFail(io::Error),
-    /// Failed to parse the Ruby version as UTF-8.
-    RubyVersionUtf8Fail(std::string::FromUtf8Error),
-    /// Failed to parse the Ruby version as a `Version`.
-    RubyVersionParseFail(VersionParseError),
+    /// Failed to get the version for `ruby`.
+    Version(RubyVersionError),
+}
+
+impl From<RubyVersionError> for RubyBuildError {
+    #[inline]
+    fn from(error: RubyVersionError) -> Self {
+        RubyBuildError::Version(error)
+    }
 }
