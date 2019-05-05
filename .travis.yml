@@ -2,6 +2,8 @@ language: rust
 rust: 1.34.0
 
 matrix:
+  allow_failures:
+  - os: windows
   include:
   - os: linux
   - os: osx
