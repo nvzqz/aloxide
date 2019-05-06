@@ -1,6 +1,8 @@
 extern crate aloxide;
 
 use std::env;
+use std::fs::File;
+use std::io::Write;
 use std::path::PathBuf;
 use std::process::Stdio;
 use aloxide::{RubySrc, Version};
@@ -58,7 +60,16 @@ fn main() {
         .build()
         .expect(&format!("Failed to build Ruby {}", version));
 
-    println!("{}", ruby.run("require 'pp'; pp RbConfig::CONFIG").unwrap());
+    let config_path = target_dir.join(format!("ruby-{}-config.txt", version));
+    let mut config_file = File::create(&config_path)
+        .expect(&format!("Failed to create {:?}", config_path));
+
+    let config = ruby.run("require 'pp'; pp RbConfig::CONFIG")
+        .expect("Failed to get config");
+
+    println!("{}", config);
+    write!(config_file, "{}", config)
+        .expect(&format!("Failed to write to {:?}", config_path));
 
     ruby.link(true).unwrap();
 }
