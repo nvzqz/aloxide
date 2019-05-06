@@ -154,7 +154,6 @@ impl Ruby {
     /// Creates a new instance from the `ruby` executable.
     #[inline]
     pub fn from_bin(ruby: impl AsRef<OsStr>) -> Result<Ruby, RubyVersionError> {
-        let ruby = ruby.as_ref();
         Ruby::from_path(RubyExecError::process(
             Command::new(ruby).args(&["-e", "print RbConfig::CONFIG['prefix']"])
         )?)
