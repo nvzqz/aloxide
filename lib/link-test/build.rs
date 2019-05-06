@@ -34,7 +34,7 @@ fn main() {
     let out_dir = target_dir.join(&format!("ruby-{}-out", version));
 
     let cache = env::var_os("ALOXIDE_RUBY_CACHE");
-    let mut downloader = RubySrc::downloader(version, &target_dir);
+    let mut downloader = RubySrc::downloader(&version, &target_dir);
     if let Some(cache) = &cache {
         downloader = downloader.cache_dir(cache);
     }

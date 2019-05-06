@@ -69,7 +69,7 @@ impl RubySrc {
     #[inline]
     #[cfg(feature = "download")]
     pub fn downloader<'a, P: AsRef<Path> + ?Sized>(
-        version: Version,
+        version: &'a Version,
         parent: &'a P,
     ) -> RubySrcDownloader<'a> {
         RubySrcDownloader::new(version, parent.as_ref())

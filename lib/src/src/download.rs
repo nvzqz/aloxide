@@ -11,7 +11,7 @@ use crate::{Archive, RubySrc, Version};
 
 /// Downloads and unpacks Ruby's source code.
 pub struct RubySrcDownloader<'a> {
-    version: Version,
+    version: &'a Version,
     dst_dir: &'a Path,
     ignore_existing_dir: bool,
     ignore_cache: bool,
@@ -21,7 +21,7 @@ pub struct RubySrcDownloader<'a> {
 
 impl<'a> RubySrcDownloader<'a> {
     #[inline]
-    pub(crate) fn new(version: Version, dst_dir: &'a Path) -> RubySrcDownloader {
+    pub(crate) fn new(version: &'a Version, dst_dir: &'a Path) -> Self {
         RubySrcDownloader {
             version,
             dst_dir,
@@ -135,7 +135,7 @@ impl<'a> RubySrcDownloader<'a> {
         Ok(src_dir.into())
     }
 
-    fn _download(version: Version, archive_path: &Path) -> Result<File, RubySrcDownloadError> {
+    fn _download(version: &Version, archive_path: &Path) -> Result<File, RubySrcDownloadError> {
         use RubySrcDownloadError::*;
 
         let response = ureq::get(&version.url()).call();

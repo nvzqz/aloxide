@@ -169,8 +169,8 @@ impl Ruby {
 
     /// Returns the Ruby version.
     #[inline]
-    pub fn version(&self) -> Version {
-        self.version
+    pub fn version(&self) -> &Version {
+        &self.version
     }
 
     /// Returns the result of executing `ruby -v`.
