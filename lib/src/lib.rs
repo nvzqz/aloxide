@@ -265,6 +265,26 @@ impl Ruby {
         self.get_config("LIBRUBYARG")
     }
 
+    /// Returns the value of `RbConfig::CONFIG['LIBS']`.
+    #[inline]
+    pub fn libs(&self) -> Result<String, RubyExecError> {
+        self.get_config("LIBS")
+    }
+
+    /// Returns the value of `RbConfig::CONFIG['MAINLIBS']`.
+    #[inline]
+    pub fn main_libs(&self) -> Result<String, RubyExecError> {
+        self.get_config("MAINLIBS")
+    }
+
+    /// Returns the value of `RbConfig::CONFIG['SOLIBS']`.
+    ///
+    /// The returned value is a list of shared object libraries.
+    #[inline]
+    pub fn so_libs(&self) -> Result<String, RubyExecError> {
+        self.get_config("SOLIBS")
+    }
+
     /// Tells `cargo` to link to Ruby and its libraries.
     pub fn link(&self, static_lib: bool) -> Result<(), RubyLinkError> {
         link::link(self, static_lib)
