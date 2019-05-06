@@ -22,34 +22,42 @@ pub(crate) fn link(ruby: &Ruby, static_lib: bool) -> Result<(), RubyLinkError> {
         "LIBRUBYARG_SHARED"
     };
 
-    let dylibs = ruby.main_libs()?;
+    let so_libs = ruby.so_libs()?;
     let args = ruby.get_config(key)?;
 
     let link_lib = |lib| {
-        if !static_lib || dylibs.contains(lib) {
-            link_dynamic(lib);
-        } else {
+        if so_libs.contains(lib) { return; }
+        if static_lib {
             link_static(lib);
+        } else {
+            link_dynamic(lib);
         }
     };
-
-    let mut iter = args.split_ascii_whitespace();
 
     let target = ruby.get_config("target")?;
     let is_msvc = target.contains("msvc") || target.contains("mswin");
 
     if is_msvc {
-        for lib in iter {
-            if lib.ends_with(".lib") {
-                let name_len = lib.len() - 4;
-                link_lib(&lib[..name_len]);
-            } else {
-                unimplemented!("{:?}", args);
+        fn link_libs<'a>(libs: &'a str, link: impl Fn(&'a str) -> ()) {
+            for lib in libs.split_ascii_whitespace() {
+                if lib.ends_with(".lib") {
+                    let name_len = lib.len() - 4;
+                    link(&lib[..name_len]);
+                } else {
+                    unimplemented!("{:?}", libs);
+                }
             }
         }
+        link_libs(&so_libs, link_dynamic);
+        link_libs(&args,    link_lib);
         return Ok(());
     }
 
+    for lib in so_libs.split_ascii_whitespace() {
+        link_dynamic(&lib[2..]);
+    }
+
+    let mut iter = args.split_ascii_whitespace();
     while let Some(arg) = iter.next() {
         if arg.len() < 2 {
             unimplemented!("{:?}", args);
