@@ -9,6 +9,7 @@ use aloxide::{RubySrc, Version};
 
 fn main() {
     let target = env::var("TARGET").unwrap();
+    let static_lib = cfg!(feature = "static");
 
     let version = match env::var("ALOXIDE_RUBY_VERSION") {
         Ok(ref version) if !version.is_empty() => {
@@ -51,6 +52,7 @@ fn main() {
             .stderr(Stdio::inherit())
         .configure()
             .inherit_cc()
+            .shared_lib(!static_lib)
             .disable_install_doc()
             .stdout(Stdio::inherit())
             .stderr(Stdio::inherit())
@@ -71,5 +73,5 @@ fn main() {
     write!(config_file, "{}", config)
         .expect(&format!("Failed to write to {:?}", config_path));
 
-    ruby.link(true).unwrap();
+    ruby.link(static_lib).unwrap();
 }

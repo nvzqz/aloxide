@@ -6,3 +6,7 @@ edition = "2018"
 
 [build-dependencies]
 aloxide = { path = "../" }
+
+[features]
+default = ["static"]
+static = []
