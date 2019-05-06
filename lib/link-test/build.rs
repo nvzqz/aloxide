@@ -4,19 +4,52 @@ use std::env;
 use std::fs::File;
 use std::io::Write;
 use std::path::PathBuf;
-use std::process::Stdio;
-use aloxide::{RubySrc, Version};
+use std::process::{Command, Stdio};
+use aloxide::{Ruby, RubySrc, Version};
 
-fn main() {
-    let target = env::var("TARGET").unwrap();
+// The driver that manages the Ruby installation
+enum Driver {
+    // https://github.com/rvm/rvm
+    Rvm,
+    // https://www.github.com/rbenv/rbenv
+    Rbenv,
+    // This project - https://github.com/nvzqz/aloxide
+    Aloxide,
+}
+
+impl Driver {
+    fn get() -> Driver {
+        if env::var_os("ALOXIDE_USE_RVM").is_some() {
+            Driver::Rvm
+        } else if env::var_os("ALOXIDE_USE_RBENV").is_some() {
+            Driver::Rbenv
+        } else {
+            Driver::Aloxide
+        }
+    }
+
+    fn ruby(self, version: &Version) -> Ruby {
+        match self {
+            Driver::Rvm => {
+                Ruby::from_cmd(Command::new("rvm")
+                    .arg(version.to_string())
+                    .arg("do")
+                    .arg("ruby")).expect("Could not execute `rvm`")
+            },
+            Driver::Rbenv => {
+                Ruby::from_cmd(Command::new("rbenv")
+                    .env("RBENV_VERSION", version.to_string())
+                    .arg("exec")
+                    .arg("ruby")).expect("Could not execute `rbenv`")
+            },
+            Driver::Aloxide => return build_ruby(version),
+        }
+    }
+}
+
+fn build_ruby(version: &Version) -> Ruby {
     let shared_lib = cfg!(feature = "shared");
-
-    let version = match env::var("ALOXIDE_RUBY_VERSION") {
-        Ok(ref version) if !version.is_empty() => {
-            version.parse::<Version>().unwrap()
-        },
-        _ => Version::new(2, 6, 2),
-    };
+    let target = env::var("TARGET").unwrap();
 
     let aloxide = match env::var_os("ALOXIDE_TEST_DIR") {
         Some(dir) => PathBuf::from(dir),
@@ -37,12 +70,12 @@ fn main() {
     let out_dir = target_dir.join(&format!("ruby-{}-out", version));
 
     let cache = env::var_os("ALOXIDE_RUBY_CACHE");
-    let mut downloader = RubySrc::downloader(&version, &target_dir);
+    let mut downloader = RubySrc::downloader(version, &target_dir);
     if let Some(cache) = &cache {
         downloader = downloader.cache_dir(cache);
     }
 
-    let ruby = downloader
+    downloader
         .cache()
         .download()
         .expect(&format!("Failed to download Ruby {}", version))
@@ -61,18 +94,36 @@ fn main() {
             .stdout(Stdio::inherit())
             .stderr(Stdio::inherit())
         .build()
-        .expect(&format!("Failed to build Ruby {}", version));
+        .expect(&format!("Failed to build Ruby {}", version))
+}
 
-    let config_path = target_dir.join(format!("ruby-{}-config.txt", version));
+fn config(ruby: &Ruby) -> String {
+    ruby.run("require 'pp'; pp RbConfig::CONFIG").expect("Failed to get config")
+}
+
+fn main() {
+    let version = match env::var("ALOXIDE_RUBY_VERSION") {
+        Ok(ref version) if !version.is_empty() => {
+            version.parse::<Version>().unwrap()
+        },
+        _ => Version::new(2, 6, 2),
+    };
+
+    let ruby = Driver::get().ruby(&version);
+
+    let config_path = ruby
+        .out_dir()
+        .parent().unwrap()
+        .join(format!("ruby-{}-config.txt", version));
+
     let mut config_file = File::create(&config_path)
         .expect(&format!("Failed to create {:?}", config_path));
 
-    let config = ruby.run("require 'pp'; pp RbConfig::CONFIG")
-        .expect("Failed to get config");
+    let config = config(&ruby);
 
     println!("{}", config);
     write!(config_file, "{}", config)
         .expect(&format!("Failed to write to {:?}", config_path));
 
-    ruby.link(!shared_lib).unwrap();
+    ruby.link(!cfg!(feature = "shared")).unwrap();
 }
