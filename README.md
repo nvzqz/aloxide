@@ -2,6 +2,16 @@
   <a href="https://github.com/nvzqz/aloxide">
     <img width="800" src="https://github.com/nvzqz/aloxide/raw/assets/aloxide_banner.svg?sanitize=true" alt="aloxide banner">
   </a>
+  <a href="https://travis-ci.com/nvzqz/aloxide">
+    <img src="https://travis-ci.com/nvzqz/aloxide.svg?branch=master" alt="travis badge">
+  </a>
+  <a href="https://crates.io/crates/aloxide">
+    <img src="https://img.shields.io/crates/v/aloxide.svg" alt="crates.io">
+    <img src="https://img.shields.io/crates/d/aloxide.svg" alt="downloads">
+  </a>
+  <a href="https://docs.rs/aloxide">
+    <img src="https://docs.rs/aloxide/badge.svg" alt="API docs">
+  </a>
 </p>
 
 Compile Ruby as a Rust `build.rs` step... and eventually more (see
