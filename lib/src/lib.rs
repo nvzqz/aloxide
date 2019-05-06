@@ -320,6 +320,74 @@ impl Ruby {
         self.with_headers(|header| headers.push(header))?;
         Ok(headers)
     }
+
+    /// Returns header contents with `#include`s that are suitable for passing
+    /// into `bindgen`.
+    ///
+    /// This method filters out headers in `arch_header_dir`. If you'd like to
+    /// keep those headers, use `wrapper_header_filtered` with a filter that
+    /// returns `true`.
+    pub fn wrapper_header(&self) -> io::Result<String> {
+        let arch_header_dir = self.arch_header_dir()?;
+        self.wrapper_header_filtered(|path| {
+            !path.starts_with(&arch_header_dir)
+        })
+    }
+
+    /// Returns header contents with filtered `#include`s that are suitable for
+    /// passing into `bindgen`.
+    ///
+    /// Filtering of headers is left completely up to the caller. Note that
+    /// headers in `arch_header_dir` will be passed in as well. This can
+    /// sometimes lead to issues regarding redefined types.
+    #[inline]
+    pub fn wrapper_header_filtered<F>(&self, mut f: F) -> io::Result<String>
+        where F: FnMut(&Path) -> bool,
+    {
+        self._wrapper_header_filtered(&mut f)
+    }
+
+    fn _wrapper_header_filtered(
+        &self,
+        f: &mut dyn FnMut(&Path) -> bool,
+    ) -> io::Result<String> {
+        let header_dir = self.header_dir()?;
+        let header_dir = Path::new(&header_dir);
+
+        let mut buf = String::new();
+
+        // Workaround for `String` not implementing `io::Write`
+        fn write_header(buf: &mut String, header: impl Display) -> io::Result<()> {
+            use io::Write;
+            let buf = unsafe { buf.as_mut_vec() };
+            writeln!(buf, "#include <{}>", header)
+        }
+
+        for entry in WalkDir::new(&header_dir) {
+            let entry = entry?;
+            let path = entry.path();
+            if path.extension() != Some("h".as_ref()) || !f(path) {
+                continue;
+            }
+            match path.strip_prefix(header_dir) {
+                Ok(header) => if cfg!(target_os = "windows") {
+                    let header = header
+                        .to_string_lossy()
+                        .as_ref()
+                        .replace('\\', "/");
+                    write_header(&mut buf, header)?;
+                } else {
+                    write_header(&mut buf, header.display())?;
+                },
+                Err(error) => return Err(io::Error::new(
+                    io::ErrorKind::Other,
+                    error,
+                )),
+            }
+        }
+
+        Ok(buf)
+    }
 }
 
 /// The error returned when running `ruby` fails.
