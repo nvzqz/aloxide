@@ -218,15 +218,11 @@ impl Ruby {
         I: IntoIterator<Item=S>,
         S: AsRef<OsStr>,
     {
-        let flags = std::iter::repeat("-e");
-        let pairs = flags.zip(scripts);
-
         let mut command = Command::new(&self.bin_path);
-        for (flag, script) in pairs {
-            command.arg(flag);
+        for script in scripts {
+            command.arg("-e");
             command.arg(script);
         }
-
         RubyExecError::process(&mut command)
     }
 
