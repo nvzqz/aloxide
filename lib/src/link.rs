@@ -25,6 +25,10 @@ pub(crate) fn link(ruby: &Ruby, static_lib: bool) -> Result<(), RubyLinkError> {
     let so_libs = ruby.so_libs()?;
     let args = ruby.get_config(key)?;
 
+    if args.trim().is_empty() {
+        return Err(RubyLinkError::MissingLibs { static_lib });
+    }
+
     let link_lib = |lib| {
         if so_libs.contains(lib) { return; }
         if static_lib {
@@ -99,6 +103,11 @@ pub enum RubyLinkError {
     Exec(RubyExecError),
     /// A `-framework` flag was found with no argument.
     MissingFramework(String),
+    /// Libraries for the type of linking could not be found.
+    MissingLibs {
+        /// Whether linking to Ruby statically.
+        static_lib: bool
+    },
 }
 
 impl From<RubyExecError> for RubyLinkError {
