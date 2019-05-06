@@ -1,6 +1,6 @@
 //! Utilities for building Ruby.
 
-use std::ffi::OsStr;
+use std::ffi::{OsStr, OsString};
 use std::fmt::Display;
 use std::borrow::Borrow;
 use std::io;
@@ -283,22 +283,42 @@ impl<'a> ConfigurePhase<'a> {
         self
     }
 
+    /// Sets the value for `key` to `val`.
+    #[inline]
+    pub fn set_val(
+        mut self,
+        key: impl Into<OsString>,
+        val: impl AsRef<OsStr>,
+    ) -> Self {
+        let mut arg = key.into();
+        arg.push("=");
+        arg.push(val);
+        self.0.configure.arg(arg);
+        self
+    }
+
+    /// Inherits the value for the environment variable `env`.
+    #[inline]
+    pub fn inherit_env(self, env: impl AsRef<OsStr>) -> Self {
+        let env = env.as_ref();
+        if let Some(var) = std::env::var_os(env) {
+            self.set_val(env, var)
+        } else {
+            self
+        }
+    }
+
     /// Sets the C compiler that Ruby should use.
     #[inline]
-    pub fn cc(mut self, cc: impl Display) -> Self {
-        self.0.configure.arg(format!("CC={}", cc));
-        self
+    pub fn set_cc(self, cc: impl AsRef<OsStr>) -> Self {
+        self.set_val("CC", cc)
     }
 
     /// Sets whether Ruby should use the C compiler defined by the `CC`
     /// environment variable.
     #[inline]
     pub fn inherit_cc(self) -> Self {
-        if let Some(cc) = std::env::var_os("CC") {
-            self.cc(PathBuf::from(cc).display())
-        } else {
-            self
-        }
+        self.inherit_env("CC")
     }
 
     /// Include `feature`.
