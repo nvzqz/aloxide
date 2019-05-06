@@ -160,12 +160,7 @@ impl<'a> RubyBuilder<'a> {
         let run_configure = run_autoconf || self.force_configure || !src_dir.join("Makefile").exists();
         phase!(configure, run_configure, ConfigureFail, ConfigureSpawnFail);
 
-        let mut bin_path = self.out_dir.join("bin");
-        if cfg!(target_os = "windows") {
-            bin_path.push("ruby.exe");
-        } else {
-            bin_path.push("ruby")
-        }
+        let bin_path = self.out_dir.join("bin").join(Ruby::bin_name());
 
         let run_make = run_configure || self.force_make || !bin_path.exists();
         phase!(make, run_make, MakeFail, MakeSpawnFail);

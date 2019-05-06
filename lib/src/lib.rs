@@ -136,6 +136,17 @@ pub struct Ruby {
 }
 
 impl Ruby {
+    #[inline]
+    fn bin_name() -> &'static str {
+        let bin = "ruby.exe";
+        if cfg!(target_os = "windows") {
+            bin
+        } else {
+            // Use the same static string
+            unsafe { bin.get_unchecked(..4) }
+        }
+    }
+
     /// Returns a `RubySrc` instance that can be used to download and build Ruby
     /// sources at `path`.
     #[inline]
@@ -151,15 +162,14 @@ impl Ruby {
     ) -> Ruby {
         let out_dir = out_dir.into();
         let lib_path = out_dir.join("lib");
-
-        let mut bin_path = out_dir.join("bin");
-        if cfg!(target_os = "windows") {
-            bin_path.push("ruby.exe");
-        } else {
-            bin_path.push("ruby");
-        }
-
+        let bin_path = out_dir.join("bin").join(Self::bin_name());
         Ruby { version, out_dir, lib_path, bin_path }
+    }
+
+    /// Returns the current Ruby found in `PATH`.
+    #[inline]
+    pub fn current() -> Result<Ruby, RubyVersionError> {
+        Self::from_bin(Self::bin_name())
     }
 
     /// Creates a new instance from the `ruby` executable.
