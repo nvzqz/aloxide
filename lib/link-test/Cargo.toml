@@ -8,5 +8,4 @@ edition = "2018"
 aloxide = { path = "../" }
 
 [features]
-default = ["static"]
-static = []
+shared = []
