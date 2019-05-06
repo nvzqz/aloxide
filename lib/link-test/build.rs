@@ -52,6 +52,7 @@ fn main() {
             .stderr(Stdio::inherit())
         .configure()
             .inherit_cc()
+            .inherit_c_flags()
             .shared_lib(shared_lib)
             .disable_install_doc()
             .stdout(Stdio::inherit())

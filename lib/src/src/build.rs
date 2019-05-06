@@ -321,6 +321,19 @@ impl<'a> ConfigurePhase<'a> {
         self.inherit_env("CC")
     }
 
+    /// Sets the flags for the C compiler.
+    #[inline]
+    pub fn set_c_flags(self, flags: impl AsRef<OsStr>) -> Self {
+        self.set_val("CFLAGS", flags)
+    }
+
+    /// Sets the flags for the C compiler defined by the `CFLAGS` environment
+    /// variable.
+    #[inline]
+    pub fn inherit_c_flags(self) -> Self {
+        self.inherit_env("CFLAGS")
+    }
+
     /// Include `feature`.
     #[inline]
     pub fn enable(mut self, feature: impl Display) -> Self {
