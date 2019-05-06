@@ -22,6 +22,7 @@ env:
   - ALOXIDE_RUBY_CACHE: "$HOME/.cache"
   - ALOXIDE_TEST_DIR: "$HOME/.aloxide"
   - CARGO_TARGET_DIR: "$PWD/target"
+  - RUSTFLAGS: '-D warnings'
 
 cache:
   directories:
@@ -34,4 +35,4 @@ before_script:
 - rustc -Vv
 - ruby --version
 script:
-- RUSTFLAGS='-D warnings' cargo test -- --no-capture
+- cargo test -- --nocapture
