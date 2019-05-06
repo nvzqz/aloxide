@@ -34,4 +34,4 @@ before_script:
 - rustc -Vv
 - ruby --version
 script:
-- RUSTFLAGS='-D warnings' cargo test -vv
+- RUSTFLAGS='-D warnings' cargo test -- --no-capture
