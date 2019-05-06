@@ -170,11 +170,9 @@ impl<'a> RubyBuilder<'a> {
         let run_make = run_configure || self.force_make || !bin_path.exists();
         phase!(make, run_make, MakeFail, MakeSpawnFail);
 
-        let version = Version::from_ruby(&bin_path)?;
-
         let lib_path = self.out_dir.join("lib");
         Ok(Ruby {
-            version,
+            version: Version::from_bin(&bin_path)?,
             out_dir: self.out_dir,
             lib_path,
             bin_path,

@@ -87,8 +87,8 @@ impl Version {
 
     /// Attempts to get the version of a `ruby` executable.
     #[inline]
-    pub fn from_ruby(ruby_exe: impl AsRef<OsStr>) -> Result<Self, RubyVersionError> {
-        Self::_from_ruby(ruby_exe.as_ref())
+    pub fn from_bin(ruby: impl AsRef<OsStr>) -> Result<Self, RubyVersionError> {
+        Self::_from_ruby(ruby.as_ref())
     }
 
     /// Returns a parser that can be used to construct a `Version` out of a

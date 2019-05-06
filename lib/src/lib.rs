@@ -151,11 +151,20 @@ impl Ruby {
         Ruby { version, out_dir, lib_path, bin_path }
     }
 
+    /// Creates a new instance from the `ruby` executable.
+    #[inline]
+    pub fn from_bin(ruby: impl AsRef<OsStr>) -> Result<Ruby, RubyVersionError> {
+        let ruby = ruby.as_ref();
+        Ruby::from_path(RubyExecError::process(
+            Command::new(ruby).args(&["-e", "print RbConfig::CONFIG['prefix']"])
+        )?)
+    }
+
     /// Creates a new instance, finding out the version by running the `ruby`
     /// executable in `out_dir`.
     pub fn from_path(out_dir: impl Into<PathBuf>) -> Result<Ruby, RubyVersionError> {
         let mut ruby = Ruby::new(Version::new(0, 0, 0), out_dir);
-        ruby.version = Version::from_ruby(&ruby.bin_path)?;
+        ruby.version = Version::from_bin(&ruby.bin_path)?;
         Ok(ruby)
     }
 
