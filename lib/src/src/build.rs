@@ -330,12 +330,28 @@ impl<'a> ConfigurePhase<'a> {
     }
 
     /// Whether to build a shared library for Ruby.
+    ///
+    /// The default value is `false`.
     #[inline]
-    pub fn shared(mut self, enable_shared: bool) -> Self {
+    pub fn shared_lib(mut self, enable_shared: bool) -> Self {
         let flag = if enable_shared {
             "--enable-shared"
         } else {
             "--disable-shared"
+        };
+        self.0.configure.arg(flag);
+        self
+    }
+
+    /// Whether to build a static library for Ruby.
+    ///
+    /// The default value is `true`.
+    #[inline]
+    pub fn static_lib(mut self, enable_static: bool) -> Self {
+        let flag = if enable_static {
+            "--enable-install-static-library"
+        } else {
+            "--disable-install-static-library"
         };
         self.0.configure.arg(flag);
         self
