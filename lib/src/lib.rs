@@ -172,11 +172,17 @@ impl Ruby {
         Self::from_bin(Self::bin_name())
     }
 
-    /// Creates a new instance from the `ruby` executable.
+    /// Creates a new instance from the specified `ruby` binary.
     #[inline]
     pub fn from_bin(ruby: impl AsRef<OsStr>) -> Result<Ruby, RubyVersionError> {
+        Self::from_cmd(&mut Command::new(ruby))
+    }
+
+    /// Creates a new instance from executing `ruby`.
+    #[inline]
+    pub fn from_cmd(ruby: &mut Command) -> Result<Ruby, RubyVersionError> {
         Ruby::from_path(RubyExecError::process(
-            Command::new(ruby).args(&["-e", "print RbConfig::CONFIG['prefix']"])
+            ruby.args(&["-e", "print RbConfig::CONFIG['prefix']"])
         )?)
     }
 
