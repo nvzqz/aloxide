@@ -28,7 +28,6 @@ cache:
   directories:
   - $HOME/.cargo
   - $ALOXIDE_RUBY_CACHE
-  - $CARGO_TARGET_DIR
 
 before_script:
 - cargo -Vv
