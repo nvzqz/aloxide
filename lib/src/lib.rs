@@ -281,6 +281,16 @@ impl Ruby {
         self.get_config("rubyarchhdrdir")
     }
 
+    /// Returns the name of the Ruby library.
+    #[inline]
+    pub fn lib_name(&self, static_lib: bool) -> Result<String, RubyExecError> {
+        let mut name = self.get_config("RUBY_SO_NAME")?;
+        if static_lib {
+            name.push_str("-static");
+        }
+        Ok(name)
+    }
+
     /// Returns the value of `RbConfig::CONFIG['LIBRUBYARG']`.
     #[inline]
     pub fn lib_args(&self) -> Result<String, RubyExecError> {
