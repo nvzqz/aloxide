@@ -35,4 +35,5 @@ before_script:
 - rustc -Vv
 - ruby --version
 script:
-- cargo test -- --nocapture
+- cargo test --lib -p aloxide
+- cargo test -vv -p aloxide-link-test
