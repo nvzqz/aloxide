@@ -42,16 +42,16 @@ pub(crate) fn link(ruby: &Ruby, static_lib: bool) -> Result<(), RubyLinkError> {
     };
 
     let target = ruby.get_config("target")?;
-    let is_msvc = target.contains("msvc") || target.contains("mswin");
 
-    if is_msvc {
+    // Compile for MSVC toolchain based on a `rustc` target or Ruby target
+    if target.contains("msvc") || target.contains("mswin") {
         fn link_libs<'a>(libs: &'a str, link: impl Fn(&'a str) -> ()) {
             for lib in libs.split_ascii_whitespace() {
                 if lib.ends_with(".lib") {
                     let name_len = lib.len() - 4;
                     link(&lib[..name_len]);
                 } else {
-                    unimplemented!("{:?}", libs);
+                    panic!("Unknown arg {:?} in {:?}", lib, libs);
                 }
             }
         }
@@ -60,19 +60,22 @@ pub(crate) fn link(ruby: &Ruby, static_lib: bool) -> Result<(), RubyLinkError> {
         return Ok(());
     }
 
+    // Ruby's dependencies should all be linked dynamically
     for lib in libs.split_ascii_whitespace() {
         link_dynamic(&lib[2..]);
     }
 
     let mut iter = args.split_ascii_whitespace();
+
+    // Need to call `iter.next()` in `-framework` case
     while let Some(arg) = iter.next() {
         if arg.len() < 2 {
-            unimplemented!("{:?}", args);
+            panic!("Unknown arg {:?} in {:?}", arg, args);
         }
         let (opt, val) = arg.split_at(2);
         match opt {
-            "-l" => {
-                link_lib(val);
+            "-l" => if !libs.contains(opt) {
+                panic!("Found unexpected lib {:?} in {:?}", val, args);
             },
             "-L" => {
                 println!("cargo:rustc-link-search=native={}", val);
@@ -90,7 +93,7 @@ pub(crate) fn link(ruby: &Ruby, static_lib: bool) -> Result<(), RubyLinkError> {
                 };
                 link_framework(framework);
             } else {
-                unimplemented!("{:?}", args);
+                panic!("Unknown arg {:?} in {:?}", arg, args);
             }
         }
     }
