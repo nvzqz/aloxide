@@ -22,7 +22,13 @@ pub(crate) fn link(ruby: &Ruby, static_lib: bool) -> Result<(), RubyLinkError> {
         "LIBRUBYARG_SHARED"
     };
 
-    let so_libs = ruby.so_libs()?;
+    let libs = if static_lib {
+        // Link to the same libraries as the main `ruby` program
+        ruby.main_libs()?
+    } else {
+        ruby.libs()?
+    };
+
     let args = ruby.get_config(key)?;
 
     if args.trim().is_empty() {
@@ -30,7 +36,7 @@ pub(crate) fn link(ruby: &Ruby, static_lib: bool) -> Result<(), RubyLinkError> {
     }
 
     let link_lib = |lib| {
-        if so_libs.contains(lib) { return; }
+        if libs.contains(lib) { return; }
         if static_lib {
             link_static(lib);
         } else {
@@ -52,12 +58,12 @@ pub(crate) fn link(ruby: &Ruby, static_lib: bool) -> Result<(), RubyLinkError> {
                 }
             }
         }
-        link_libs(&so_libs, link_dynamic);
-        link_libs(&args,    link_lib);
+        link_libs(&libs, link_dynamic);
+        link_libs(&args, link_lib);
         return Ok(());
     }
 
-    for lib in so_libs.split_ascii_whitespace() {
+    for lib in libs.split_ascii_whitespace() {
         link_dynamic(&lib[2..]);
     }
 
