@@ -22,7 +22,7 @@ env:
   - ALOXIDE_RUBY_CACHE: "$HOME/.cache"
   - ALOXIDE_TEST_DIR: "$HOME/.aloxide"
   - CARGO_TARGET_DIR: "$PWD/target"
-  - RUSTFLAGS: "-D warnings"
+  - RUSTFLAGS: "-Dwarnings"
 
 cache:
   directories:
