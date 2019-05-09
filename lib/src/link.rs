@@ -23,18 +23,21 @@ pub(crate) fn link(ruby: &Ruby, static_lib: bool) -> Result<(), RubyLinkError> {
     };
 
     let libs = ruby.aux_libs(static_lib)?;
+    let libs = libs.as_str();
     let args = ruby.get_config(key)?;
 
     if args.trim().is_empty() {
         return Err(RubyLinkError::MissingLibs { static_lib });
     }
 
-    let link_lib = |lib| {
-        if libs.contains(lib) { return; }
-        if static_lib {
-            link_static(lib);
-        } else {
-            link_dynamic(lib);
+    let link_lib = if static_lib { link_static } else { link_dynamic };
+
+    let ruby_lib = ruby.lib_name(static_lib)?;
+    link_lib(&ruby_lib);
+
+    let link_lib = move |lib| {
+        if lib != ruby_lib && !libs.contains(lib) {
+            link_lib(lib);
         }
     };
 
