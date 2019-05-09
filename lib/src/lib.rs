@@ -307,6 +307,17 @@ impl Ruby {
         self.get_config("SOLIBS")
     }
 
+    /// The auxiliary libraries that should be dynamically linked to.
+    #[inline]
+    pub fn aux_libs(&self, static_lib: bool) -> Result<String, RubyExecError> {
+        if static_lib {
+            // Link to the same libraries as the main `ruby` program
+            self.main_libs()
+        } else {
+            self.libs()
+        }
+    }
+
     /// Tells `cargo` to link to Ruby and its libraries.
     pub fn link(&self, static_lib: bool) -> Result<(), RubyLinkError> {
         link::link(self, static_lib)

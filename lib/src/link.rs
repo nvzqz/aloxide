@@ -22,13 +22,7 @@ pub(crate) fn link(ruby: &Ruby, static_lib: bool) -> Result<(), RubyLinkError> {
         "LIBRUBYARG_SHARED"
     };
 
-    let libs = if static_lib {
-        // Link to the same libraries as the main `ruby` program
-        ruby.main_libs()?
-    } else {
-        ruby.libs()?
-    };
-
+    let libs = ruby.aux_libs(static_lib)?;
     let args = ruby.get_config(key)?;
 
     if args.trim().is_empty() {

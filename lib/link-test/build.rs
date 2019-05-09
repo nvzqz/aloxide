@@ -125,5 +125,10 @@ fn main() {
     write!(config_file, "{}", config)
         .expect(&format!("Failed to write to {:?}", config_path));
 
-    ruby.link(!cfg!(feature = "shared")).unwrap();
+    let static_lib = !cfg!(feature = "shared");
+
+    let aux_libs = ruby.aux_libs(static_lib).unwrap();
+    println!("Linking to aux libs: {}", aux_libs);
+
+    ruby.link(static_lib).unwrap();
 }
