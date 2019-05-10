@@ -89,12 +89,15 @@
 
 #![deny(missing_docs)]
 
-extern crate bzip2;
 extern crate cc;
 extern crate dirs;
 extern crate memchr;
-extern crate tar;
 extern crate walkdir;
+
+#[cfg(feature = "archive")]
+extern crate bzip2;
+#[cfg(feature = "archive")]
+extern crate tar;
 
 #[cfg(feature = "ureq")]
 extern crate ureq;
@@ -108,7 +111,11 @@ use std::string::FromUtf8Error;
 
 use walkdir::{WalkDir, DirEntry};
 
+#[cfg(feature = "archive")]
 mod archive;
+#[cfg(feature = "archive")]
+pub use archive::Archive;
+
 mod link;
 pub mod src;
 pub mod version;
@@ -117,7 +124,6 @@ use version::RubyVersionError;
 
 #[doc(inline)]
 pub use self::{
-    archive::Archive,
     link::*,
     src::RubySrc,
     version::Version,

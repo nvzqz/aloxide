@@ -7,6 +7,8 @@ use tar::{Archive as Tar, EntryType, Header};
 use bzip2::read::BzDecoder as Bz;
 
 /// A type that contains the contents of a `.tar.bz2` archive.
+///
+/// **Note:** requires the `archive` or `download` feature (the default).
 pub trait Archive: io::Read {
     /// Attempts to unpack the contents of `self` as a `.tar.bz2` archive into
     /// `dst_dir`.

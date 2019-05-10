@@ -17,11 +17,11 @@ categories = ["development-tools::build-utils"]
 include = ["Cargo.toml", "src/**/*.rs", "README.md", "CHANGELOG.md", "LICENSE*"]
 
 [dependencies]
-bzip2 = "0.3"
+bzip2 = { version = "0.3", optional = true }
 cc = "1"
 dirs = "1"
 memchr = "2"
-tar = "0.4"
+tar = { version = "0.4", optional = true }
 walkdir = "2"
 
 [dependencies.ureq]
@@ -32,4 +32,5 @@ optional = true
 
 [features]
 default = ["download"]
-download = ["ureq"]
+archive = ["bzip2", "tar"]
+download = ["archive", "ureq"]
