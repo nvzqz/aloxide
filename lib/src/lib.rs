@@ -89,8 +89,10 @@
 
 #![deny(missing_docs)]
 
-extern crate cc;
 extern crate memchr;
+
+#[cfg(target_os = "windows")]
+extern crate cc;
 
 #[cfg(feature = "archive")]
 extern crate bzip2;

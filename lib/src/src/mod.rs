@@ -3,8 +3,6 @@
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-use cc::windows_registry;
-
 use crate::Version;
 
 pub mod build;
@@ -106,7 +104,7 @@ impl RubySrc {
     /// Returns a `make` command suitable for `target` to run in this directory.
     #[inline]
     pub fn make(&self, target: impl AsRef<str>) -> Command {
-        let mut cmd = match windows_registry::find(target.as_ref(), "nmake") {
+        let mut cmd = match crate::util::nmake(target.as_ref()) {
             Some(cmd) => cmd,
             None => Command::new("make"),
         };

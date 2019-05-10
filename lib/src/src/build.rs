@@ -59,7 +59,7 @@ impl<'a> RubyBuilder<'a> {
         let ruby_target = RubyBuilder::convert_to_ruby(target);
         let rust_target = RubyBuilder::convert_to_rust(target);
 
-        let nmake = cc::windows_registry::find(rust_target, "nmake.exe");
+        let nmake = crate::util::nmake(rust_target);
         let target_msvc = cfg!(target_os = "windows") && nmake.is_some();
 
         let (mut make, configure_path) = match nmake {
