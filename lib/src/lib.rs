@@ -91,7 +91,6 @@
 
 extern crate cc;
 extern crate memchr;
-extern crate walkdir;
 
 #[cfg(feature = "archive")]
 extern crate bzip2;
@@ -110,14 +109,13 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
 use std::string::FromUtf8Error;
 
-use walkdir::{WalkDir, DirEntry};
-
 #[cfg(feature = "archive")]
 mod archive;
 #[cfg(feature = "archive")]
 pub use archive::Archive;
 
 mod link;
+mod util;
 pub mod src;
 pub mod version;
 
@@ -340,22 +338,14 @@ impl Ruby {
         link::link(self, static_lib)
     }
 
-    /// Iterates over the header directory entries for the Ruby library.
-    pub fn with_header_entries<F>(&self, mut f: F) -> io::Result<()>
-        where F: FnMut(DirEntry) -> ()
-    {
-        for entry in WalkDir::new(self.include_dir()?) {
-            let entry = entry?;
-            if entry.path().extension() == Some("h".as_ref()) {
-                f(entry);
-            }
-        }
-        Ok(())
-    }
-
     /// Iterates over the header directory paths for the Ruby library.
     pub fn with_headers<F: FnMut(PathBuf)>(&self, mut f: F) -> io::Result<()> {
-        self.with_header_entries(|entry| f(entry.into_path()))
+        util::walk_files(self.include_dir()?.as_ref(), |path| {
+            if path.extension() == Some("h".as_ref()) {
+                f(path);
+            }
+            Ok(())
+        })
     }
 
     /// Returns all header paths for the Ruby library.
@@ -407,28 +397,28 @@ impl Ruby {
             writeln!(buf, "#include <{}>", header)
         }
 
-        for entry in WalkDir::new(&header_dir) {
-            let entry = entry?;
-            let path = entry.path();
-            if path.extension() != Some("h".as_ref()) || !f(path) {
-                continue;
+        util::walk_files(&header_dir, |path| {
+            if path.extension() != Some("h".as_ref()) || !f(&path) {
+                return Ok(());
             }
             match path.strip_prefix(header_dir) {
-                Ok(header) => if cfg!(target_os = "windows") {
-                    let header = header
-                        .to_string_lossy()
-                        .as_ref()
-                        .replace('\\', "/");
-                    write_header(&mut buf, header)?;
-                } else {
-                    write_header(&mut buf, header.display())?;
+                Ok(header) => {
+                    if cfg!(target_os = "windows") {
+                        let header = header
+                            .to_string_lossy()
+                            .as_ref()
+                            .replace('\\', "/");
+                        write_header(&mut buf, header)?;
+                    } else {
+                        write_header(&mut buf, header.display())?;
+                    }
+                    Ok(())
                 },
-                Err(error) => return Err(io::Error::new(
-                    io::ErrorKind::Other,
-                    error,
-                )),
+                Err(error) => {
+                    Err(io::Error::new(io::ErrorKind::Other, error))
+                },
             }
-        }
+        })?;
 
         Ok(buf)
     }
