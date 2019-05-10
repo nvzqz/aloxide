@@ -110,6 +110,7 @@ fn main() {
     };
 
     let ruby = Driver::get().ruby(&version);
+    assert_eq!(ruby.version(), version);
 
     let config_path = ruby
         .out_dir()
