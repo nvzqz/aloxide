@@ -90,7 +90,6 @@
 #![deny(missing_docs)]
 
 extern crate cc;
-extern crate dirs;
 extern crate memchr;
 extern crate walkdir;
 
@@ -99,7 +98,9 @@ extern crate bzip2;
 #[cfg(feature = "archive")]
 extern crate tar;
 
-#[cfg(feature = "ureq")]
+#[cfg(feature = "download")]
+extern crate dirs;
+#[cfg(feature = "download")]
 extern crate ureq;
 
 use std::ffi::OsStr;

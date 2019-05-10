@@ -19,7 +19,7 @@ include = ["Cargo.toml", "src/**/*.rs", "README.md", "CHANGELOG.md", "LICENSE*"]
 [dependencies]
 bzip2 = { version = "0.3", optional = true }
 cc = "1"
-dirs = "1"
+dirs = { version = "1", optional = true }
 memchr = "2"
 tar = { version = "0.4", optional = true }
 walkdir = "2"
@@ -33,4 +33,4 @@ optional = true
 [features]
 default = ["download"]
 archive = ["bzip2", "tar"]
-download = ["archive", "ureq"]
+download = ["archive", "ureq", "dirs"]
