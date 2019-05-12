@@ -7,24 +7,22 @@ use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use aloxide::{Ruby, RubySrc, Version};
 
-// The driver that manages the Ruby installation
+// An external driver that manages the Ruby installation
 enum Driver {
     // https://github.com/rvm/rvm
     Rvm,
     // https://www.github.com/rbenv/rbenv
     Rbenv,
-    // This project - https://github.com/nvzqz/aloxide
-    Aloxide,
 }
 
 impl Driver {
-    fn get() -> Driver {
+    fn get() -> Option<Driver> {
         if env::var_os("ALOXIDE_USE_RVM").is_some() {
-            Driver::Rvm
+            Some(Driver::Rvm)
         } else if env::var_os("ALOXIDE_USE_RBENV").is_some() {
-            Driver::Rbenv
+            Some(Driver::Rbenv)
         } else {
-            Driver::Aloxide
+            None
         }
     }
 
@@ -42,12 +40,13 @@ impl Driver {
                     .arg("exec")
                     .arg("ruby")).expect("Could not execute `rbenv`")
             },
-            Driver::Aloxide => return build_ruby(version),
         }
     }
 }
 
 fn build_ruby(version: &Version) -> Ruby {
+    println!("Building Ruby {}", version);
+
     let shared_lib = cfg!(feature = "shared");
     let target = env::var("TARGET").unwrap();
 
@@ -101,35 +100,44 @@ fn config(ruby: &Ruby) -> String {
     ruby.run("require 'pp'; pp RbConfig::CONFIG").expect("Failed to get config")
 }
 
+fn rerun_if_env_changed(var: &str) {
+    println!("cargo:rerun-if-env-changed={}", var);
+}
+
+fn ruby_version() -> Option<Version> {
+    Some(env::var_os("ALOXIDE_RUBY_VERSION")?
+        .to_str()
+        .expect("'ALOXIDE_RUBY_VERSION' is not UTF-8")
+        .parse()
+        .expect("Could not parse 'ALOXIDE_RUBY_VERSION'"))
+}
+
+const STATIC_LIB: bool = !cfg!(feature = "shared");
+
 fn main() {
-    let version = match env::var("ALOXIDE_RUBY_VERSION") {
-        Ok(ref version) if !version.is_empty() => {
-            version.parse::<Version>().unwrap()
+    rerun_if_env_changed("ALOXIDE_USE_RVM");
+    rerun_if_env_changed("ALOXIDE_USE_RBENV");
+    rerun_if_env_changed("ALOXIDE_RUBY_VERSION");
+
+    let ruby = match (Driver::get(), ruby_version()) {
+        (Some(driver), version) => {
+            let version = version.unwrap_or(Version::new(2, 6, 2));
+            let ruby = driver.ruby(&version);
+            assert_eq!(*ruby.version(), version);
+            ruby
         },
-        _ => Version::new(2, 6, 2),
+        (None, Some(version)) => {
+            build_ruby(&version)
+        },
+        (None, None) => {
+            Ruby::current().expect("Could not get system Ruby")
+        },
     };
 
-    let ruby = Driver::get().ruby(&version);
-    assert_eq!(ruby.version(), version);
+    let version = ruby.version();
+    println!("Building for Ruby {}", version);
 
-    let config_path = ruby
-        .out_dir()
-        .parent().unwrap()
-        .join(format!("ruby-{}-config.txt", version));
+    println!("{}", config(&ruby));
 
-    let mut config_file = File::create(&config_path)
-        .expect(&format!("Failed to create {:?}", config_path));
-
-    let config = config(&ruby);
-
-    println!("{}", config);
-    write!(config_file, "{}", config)
-        .expect(&format!("Failed to write to {:?}", config_path));
-
-    let static_lib = !cfg!(feature = "shared");
-
-    let aux_libs = ruby.aux_libs(static_lib).unwrap();
-    println!("Linking to aux libs: {}", aux_libs);
-
-    ruby.link(static_lib).unwrap();
+    ruby.link(STATIC_LIB).unwrap();
 }
