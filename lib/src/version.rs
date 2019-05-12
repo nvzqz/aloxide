@@ -2,11 +2,11 @@
 
 use std::cmp::Ordering;
 use std::convert::TryFrom;
-use std::ffi::OsStr;
+use std::ffi::{CStr, OsStr};
 use std::fmt;
 use std::num::ParseIntError;
 use std::process::Command;
-use std::str::FromStr;
+use std::str::{FromStr, Utf8Error};
 
 use crate::RubyExecError;
 
@@ -107,12 +107,43 @@ impl fmt::Display for Version {
     }
 }
 
+impl TryFrom<&[u8]> for Version {
+    type Error = VersionParseError;
+
+    #[inline]
+    fn try_from(b: &[u8]) -> Result<Self, Self::Error> {
+        std::str::from_utf8(b)?.parse()
+    }
+}
+
+impl TryFrom<&CStr> for Version {
+    type Error = VersionParseError;
+
+    #[inline]
+    fn try_from(s: &CStr) -> Result<Self, Self::Error> {
+        s.to_str()?.parse()
+    }
+}
+
+impl TryFrom<&OsStr> for Version {
+    type Error = VersionParseError;
+
+    #[inline]
+    fn try_from(s: &OsStr) -> Result<Self, Self::Error> {
+        if let Some(s) = s.to_str() {
+            s.parse()
+        } else {
+            Err(VersionParseError::InvalidUnicode)
+        }
+    }
+}
+
 impl TryFrom<&str> for Version {
     type Error = VersionParseError;
 
     #[inline]
     fn try_from(s: &str) -> Result<Self, Self::Error> {
-        Self::parser().parse(s)
+        s.parse()
     }
 }
 
@@ -121,7 +152,7 @@ impl FromStr for Version {
 
     #[inline]
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Self::try_from(s)
+        Self::parser().parse(s)
     }
 }
 
@@ -310,6 +341,17 @@ pub enum VersionParseError {
     MinorInt(ParseIntError),
     /// Invalid 'x.y.Z'.
     TeenyInt(ParseIntError),
+    /// Could not convert some string-like type into `&str` to continue parsing.
+    Utf8(Utf8Error),
+    /// Could not convert some type into a `&str` to continue parsing.
+    InvalidUnicode,
+}
+
+impl From<Utf8Error> for VersionParseError {
+    #[inline]
+    fn from(error: Utf8Error) -> Self {
+        VersionParseError::Utf8(error)
+    }
 }
 
 /// Failed to get a Ruby version from a `ruby` executable.
