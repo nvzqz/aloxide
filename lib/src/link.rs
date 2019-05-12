@@ -135,7 +135,7 @@ pub(crate) fn link(ruby: &Ruby, static_lib: bool) -> Result<(), RubyLinkError> {
 
     while let Some(arg) = args_iter.next() {
         if arg.len() < 2 {
-            panic!("Unknown arg {:?} in {:?}", arg, args);
+            return Err(UnknownFlags(args));
         }
         let (opt, val) = arg.split_at(2);
         match opt {
@@ -158,7 +158,7 @@ pub(crate) fn link(ruby: &Ruby, static_lib: bool) -> Result<(), RubyLinkError> {
                 };
                 link_framework(framework);
             } else {
-                panic!("Unknown arg {:?} in {:?}", arg, args);
+                return Err(UnknownFlags(args));
             }
         }
     }
@@ -172,6 +172,8 @@ pub(crate) fn link(ruby: &Ruby, static_lib: bool) -> Result<(), RubyLinkError> {
 pub enum RubyLinkError {
     /// Failed to execute the `ruby` binary.
     Exec(RubyExecError),
+    /// One or more flags provided by `ruby` have no rules to handle them.
+    UnknownFlags(String),
     /// A `-framework` flag was found with no argument.
     MissingFramework(String),
     /// Libraries for the type of linking could not be found.
