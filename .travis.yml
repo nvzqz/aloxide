@@ -19,6 +19,7 @@ matrix:
 env:
   global:
   - ALOXIDE_RUBY_VERSION: 2.6.0
+  - ALOXIDE_USE_RVM: 1
   - ALOXIDE_RUBY_CACHE: "$HOME/.cache"
   - ALOXIDE_TEST_DIR: "$HOME/.aloxide"
   - CARGO_TARGET_DIR: "$PWD/target"
@@ -29,6 +30,8 @@ cache:
   - $HOME/.cargo
   - $ALOXIDE_RUBY_CACHE
 
+before_install:
+- ./scripts/install_ruby.sh
 before_script:
 - cargo -Vv
 - rustc -Vv
