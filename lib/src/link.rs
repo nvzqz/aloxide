@@ -63,12 +63,11 @@ fn os_helper(ruby: &Ruby, static_lib: bool) -> Result<(), RubyLinkError> {
     let so_path = ruby.lib_dir().join(&so_name);
 
     link_path.push(&so_name);
-
     if !link_path.exists() {
-        symlink(&so_path, link_path)
-    } else {
-        Ok(())
+        symlink(&so_path, link_path)?;
     }
+
+    Ok(())
 }
 
 #[cfg(not(target_os = "linux"))]
