@@ -195,6 +195,7 @@ impl Ruby {
 
     /// Creates a new instance, finding out the version by running the `ruby`
     /// executable in `out_dir`.
+    #[inline]
     pub fn from_path(out_dir: impl Into<PathBuf>) -> Result<Ruby, RubyVersionError> {
         let mut ruby = Ruby::new(Version::new(0, 0, 0), out_dir);
         ruby.version = Version::from_bin(&ruby.bin_path)?;
