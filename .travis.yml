@@ -46,7 +46,6 @@ before_install:
 before_script:
 - cargo -Vv
 - rustc -Vv
-- ruby --version
+- rvm "$ALOXIDE_RUBY_VERSION" do ruby -e "require 'pp'; pp RbConfig::CONFIG"
 script:
-- cargo test --lib -p aloxide
-- cargo test -vv -p aloxide-link-test
+- cargo test --all

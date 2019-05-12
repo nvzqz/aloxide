@@ -134,7 +134,9 @@ fn main() {
     let version = ruby.version();
     println!("Building for Ruby {}", version);
 
-    println!("{}", config(&ruby));
+    if has_env("ALOXIDE_PRINT_CONFIG") {
+        println!("{}", config(&ruby));
+    }
 
     ruby.link(static_lib).unwrap();
 }
