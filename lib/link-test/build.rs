@@ -44,10 +44,9 @@ impl Driver {
     }
 }
 
-fn build_ruby(version: &Version) -> Ruby {
+fn build_ruby(version: &Version, static_lib: bool) -> Ruby {
     println!("Building Ruby {}", version);
 
-    let shared_lib = cfg!(feature = "shared");
     let target = env::var("TARGET").unwrap();
 
     let aloxide = match env::var_os("ALOXIDE_TEST_DIR") {
@@ -85,7 +84,7 @@ fn build_ruby(version: &Version) -> Ruby {
         .configure()
             .inherit_cc()
             .inherit_c_flags()
-            .shared_lib(shared_lib)
+            .shared_lib(!static_lib)
             .disable_install_doc()
             .stdout(Stdio::inherit())
             .stderr(Stdio::inherit())
@@ -112,12 +111,13 @@ fn ruby_version() -> Option<Version> {
         .expect("Could not parse 'ALOXIDE_RUBY_VERSION'"))
 }
 
-const STATIC_LIB: bool = !cfg!(feature = "shared");
-
 fn main() {
     rerun_if_env_changed("ALOXIDE_USE_RVM");
     rerun_if_env_changed("ALOXIDE_USE_RBENV");
     rerun_if_env_changed("ALOXIDE_RUBY_VERSION");
+    rerun_if_env_changed("ALOXIDE_STATIC_RUBY");
+
+    let static_lib = env::var_os("ALOXIDE_STATIC_RUBY").is_some();
 
     let ruby = match (Driver::get(), ruby_version()) {
         (Some(driver), version) => {
@@ -127,7 +127,7 @@ fn main() {
             ruby
         },
         (None, Some(version)) => {
-            build_ruby(&version)
+            build_ruby(&version, static_lib)
         },
         (None, None) => {
             Ruby::current().expect("Could not get system Ruby")
@@ -139,5 +139,5 @@ fn main() {
 
     println!("{}", config(&ruby));
 
-    ruby.link(STATIC_LIB).unwrap();
+    ruby.link(static_lib).unwrap();
 }

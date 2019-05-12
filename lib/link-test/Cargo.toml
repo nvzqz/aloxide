@@ -6,6 +6,3 @@ edition = "2018"
 
 [build-dependencies]
 aloxide = { path = "../" }
-
-[features]
-shared = []
