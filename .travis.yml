@@ -8,28 +8,28 @@ matrix:
   - os: linux
   - os: linux
     env:
-    - ALOXIDE_STATIC_RUBY: 1
+    - ALOXIDE_STATIC_RUBY: true
   - os: osx
   - os: osx
     env:
-    - ALOXIDE_STATIC_RUBY: 1
+    - ALOXIDE_STATIC_RUBY: true
   - os: osx
     osx_image: xcode8.0 # OS X 10.11 El Capitan
   - os: osx
     osx_image: xcode8.0 # OS X 10.11 El Capitan
     env:
-    - ALOXIDE_STATIC_RUBY: 1
+    - ALOXIDE_STATIC_RUBY: true
     env:
-    - ALOXIDE_STATIC_RUBY: 1
+    - ALOXIDE_STATIC_RUBY: true
   - os: windows
   - os: windows
     env:
-    - ALOXIDE_STATIC_RUBY: 1
+    - ALOXIDE_STATIC_RUBY: true
 
 env:
   global:
   - ALOXIDE_RUBY_VERSION: 2.6.0
-  - ALOXIDE_USE_RVM: 1
+  - ALOXIDE_USE_RVM: true
   - ALOXIDE_RUBY_CACHE: "$HOME/.cache"
   - ALOXIDE_TEST_DIR: "$HOME/.aloxide"
   - CARGO_TARGET_DIR: "$PWD/target"
