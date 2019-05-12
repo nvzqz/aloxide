@@ -143,22 +143,30 @@ impl Version {
         Version { major, minor, teeny, pre: Some(pre.into()) }
     }
 
-    fn _from_ruby(ruby_exe: &OsStr) -> Result<Self, RubyVersionError> {
-        let mut ruby = Command::new(ruby_exe);
-        ruby.args(&["-e", "print RbConfig::CONFIG['RUBY_PROGRAM_VERSION']"]);
-        Ok(RubyExecError::process(&mut ruby)?.parse()?)
-    }
-
     /// Returns the pre-release identifier string for `self`.
     #[inline]
     pub fn pre(&self) -> Option<&str> {
         self.pre.as_ref().map(|s| &**s)
     }
 
+    /// Attempts to get the version of the current Ruby found in `PATH`.
+    #[inline]
+    pub fn current() -> Result<Self, RubyVersionError> {
+        Self::from_bin("ruby")
+    }
+
     /// Attempts to get the version of a `ruby` executable.
     #[inline]
     pub fn from_bin(ruby: impl AsRef<OsStr>) -> Result<Self, RubyVersionError> {
-        Self::_from_ruby(ruby.as_ref())
+        Self::from_cmd(&mut Command::new(ruby))
+    }
+
+    /// Attempts to get the version of `ruby` by executing it.
+    #[inline]
+    pub fn from_cmd(ruby: &mut Command) -> Result<Self, RubyVersionError> {
+        Ok(RubyExecError::process(
+            ruby.args(&["-e", "print RbConfig::CONFIG['RUBY_PROGRAM_VERSION']"])
+        )?.parse()?)
     }
 
     /// Returns a parser that can be used to construct a `Version` out of a
