@@ -1,4 +1,7 @@
-use std::collections::HashSet;
+use std::{
+    collections::HashSet,
+    io,
+};
 use crate::{Ruby, RubyExecError};
 use RubyLinkError::*;
 
@@ -24,8 +27,59 @@ fn lib_name_msvc(lib_flag: &str) -> &str {
     &lib_flag[..(lib_flag.len() - 4)]
 }
 
+#[cfg(target_os = "linux")]
+fn os_helper(ruby: &Ruby, static_lib: bool) -> Result<(), RubyLinkError> {
+    use std::env;
+    use std::os::unix::fs::symlink;
+    use std::path::PathBuf;
+
+    // Rust can't find and link to the Ruby's shared object ('.so') library when
+    // linking dynamically and so we need to hold its hand by symlinking it into
+    // the 'deps'
+    if static_lib {
+        return Ok(());
+    }
+
+    // Get the 'deps' directory in Cargo's 'target' directory by going to the
+    // parent directory of 'build' and then into 'deps'
+    let mut link_path = match env::var_os("OUT_DIR") {
+        Some(out_dir) => {
+            let mut out_dir = PathBuf::from(out_dir);
+            for _ in 0..3 {
+                if !out_dir.pop() {
+                    let mesg = "Could not find 'deps' directory";
+                    let kind = io::ErrorKind::NotFound;
+                    return Err(io::Error::new(kind, mesg).into());
+                }
+            }
+            out_dir.push("deps");
+            out_dir
+        },
+        None => return Err(RubyLinkError::MissingEnvVar("OUT_DIR")),
+    };
+
+    let version = ruby.version();
+    let so_name = format!("libruby.so.{}.{}", version.major, version.minor);
+    let so_path = ruby.lib_dir().join(&so_name);
+
+    link_path.push(&so_name);
+
+    if !link_path.exists() {
+        symlink(&so_path, link_path)
+    } else {
+        Ok(())
+    }
+}
+
+#[cfg(not(target_os = "linux"))]
+fn os_helper(_ruby: &Ruby, _static_lib: bool) -> Result<(), RubyLinkError> {
+    Ok(())
+}
+
 pub(crate) fn link(ruby: &Ruby, static_lib: bool) -> Result<(), RubyLinkError> {
-    println!("cargo:rustc-link-search=native={}", ruby.lib_path.display());
+    os_helper(ruby, static_lib)?;
+
+    println!("cargo:rustc-link-search=native={}", ruby.lib_dir().display());
 
     let target = ruby.get_config("target")?;
     let target_msvc = target.contains("msvc") || target.contains("mswin");
@@ -126,11 +180,22 @@ pub enum RubyLinkError {
         /// Whether linking to Ruby statically.
         static_lib: bool
     },
+    /// An environment variable required for linking is missing.
+    MissingEnvVar(&'static str),
+    /// An I/O error occurred.
+    Io(io::Error),
 }
 
 impl From<RubyExecError> for RubyLinkError {
     #[inline]
     fn from(error: RubyExecError) -> Self {
         RubyLinkError::Exec(error)
+    }
+}
+
+impl From<io::Error> for RubyLinkError {
+    #[inline]
+    fn from(error: io::Error) -> Self {
+        RubyLinkError::Io(error)
     }
 }

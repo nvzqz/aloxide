@@ -165,11 +165,11 @@ impl<'a> RubyBuilder<'a> {
         let run_make = run_configure || self.force_make || !bin_path.exists();
         phase!(make, run_make, MakeFail, MakeSpawnFail);
 
-        let lib_path = self.out_dir.join("lib");
+        let lib_dir = self.out_dir.join("lib");
         Ok(Ruby {
             version: Version::from_bin(&bin_path)?,
             out_dir: self.out_dir,
-            lib_path,
+            lib_dir,
             bin_path,
         })
     }

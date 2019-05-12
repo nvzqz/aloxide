@@ -138,7 +138,7 @@ pub use self::{
 pub struct Ruby {
     version: Version,
     out_dir: PathBuf,
-    lib_path: PathBuf,
+    lib_dir: PathBuf,
     bin_path: PathBuf,
 }
 
@@ -168,9 +168,9 @@ impl Ruby {
         out_dir: impl Into<PathBuf>,
     ) -> Ruby {
         let out_dir = out_dir.into();
-        let lib_path = out_dir.join("lib");
+        let lib_dir = out_dir.join("lib");
         let bin_path = out_dir.join("bin").join(Self::bin_name());
-        Ruby { version, out_dir, lib_path, bin_path }
+        Ruby { version, out_dir, lib_dir, bin_path }
     }
 
     /// Returns the current Ruby found in `PATH`.
@@ -237,6 +237,12 @@ impl Ruby {
     #[inline]
     pub fn out_dir(&self) -> &Path {
         &self.out_dir
+    }
+
+    /// The directory where Ruby's library lives.
+    #[inline]
+    pub fn lib_dir(&self) -> &Path {
+        &self.lib_dir
     }
 
     /// The path of the `ruby` executable.
