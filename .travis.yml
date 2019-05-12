@@ -17,6 +17,9 @@ matrix:
   - os: windows
 
 env:
+  matrix:
+  - ALOXIDE_STATIC_RUBY: ""
+  - ALOXIDE_STATIC_RUBY: "1"
   global:
   - ALOXIDE_RUBY_VERSION: 2.6.0
   - ALOXIDE_USE_RVM: 1
