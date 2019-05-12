@@ -11,17 +11,21 @@ function check() {
 
 [[ -n "$ALOXIDE_RUBY_VERSION" ]] || error "Specify Ruby version via 'ALOXIDE_RUBY_VERSION'"
 
-if [[ -z "$ALOXIDE_STATIC_RUBY" ]]; then
+if [[ -n "$ALOXIDE_STATIC_RUBY" ]]; then
     CONFIGURE_OPTS="--disable-shared"
+    echo "Setting up Ruby for static linking"
 else
     CONFIGURE_OPTS="--enable-shared"
+    echo "Setting up Ruby for shared linking"
 fi
 
-if [[ ! -z "$ALOXIDE_USE_RVM" ]]; then
+if [[ -n "$ALOXIDE_USE_RVM" ]]; then
     check rvm
+    echo "Installing Ruby via 'rvm'"
     rvm install "$CONFIGURE_OPTS" "$ALOXIDE_RUBY_VERSION"
-elif [[ ! -z "$ALOXIDE_USE_RBENV" ]]; then
+elif [[ -n "$ALOXIDE_USE_RBENV" ]]; then
     check rbenv
+    echo "Installing Ruby via 'rbenv'"
     rbenv install -s "$ALOXIDE_RUBY_VERSION"
 else
     error "Neither 'ALOXIDE_USE_RVM' nor 'ALOXIDE_USE_RBENV' set in environment"
