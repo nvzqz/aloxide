@@ -171,22 +171,17 @@ impl Version {
     /// Returns the name of the archive file corresponding to `self`.
     #[inline]
     pub fn archive_name(&self) -> String {
-        format!(
-            "ruby-{major}.{minor}.{teeny}.tar.bz2",
-            major = self.major,
-            minor = self.minor,
-            teeny = self.teeny,
-        )
+        format!("ruby-{}.tar.bz2", self)
     }
 
     /// Returns an HTTPS URL for `self`.
     #[inline]
     pub fn url(&self) -> String {
         format!(
-            "https://cache.ruby-lang.org/pub/ruby/{major}.{minor}/ruby-{major}.{minor}.{teeny}.tar.bz2",
+            "https://cache.ruby-lang.org/pub/ruby/{major}.{minor}/ruby-{version}.tar.bz2",
             major = self.major,
             minor = self.minor,
-            teeny = self.teeny,
+            version = self,
         )
     }
 }
