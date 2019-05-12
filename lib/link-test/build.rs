@@ -1,6 +1,7 @@
 extern crate aloxide;
 
 use std::env;
+use std::ffi::OsStr;
 use std::fs::File;
 use std::io::Write;
 use std::path::PathBuf;
@@ -17,9 +18,9 @@ enum Driver {
 
 impl Driver {
     fn get() -> Option<Driver> {
-        if env::var_os("ALOXIDE_USE_RVM").is_some() {
+        if has_env("ALOXIDE_USE_RVM") {
             Some(Driver::Rvm)
-        } else if env::var_os("ALOXIDE_USE_RBENV").is_some() {
+        } else if has_env("ALOXIDE_USE_RBENV") {
             Some(Driver::Rbenv)
         } else {
             None
@@ -95,6 +96,10 @@ fn build_ruby(version: &Version, static_lib: bool) -> Ruby {
         .expect(&format!("Failed to build Ruby {}", version))
 }
 
+fn has_env(key: impl AsRef<OsStr>) -> bool {
+    env::var_os(key).map(|var| !var.is_empty()).unwrap_or(false)
+}
+
 fn config(ruby: &Ruby) -> String {
     ruby.run("require 'pp'; pp RbConfig::CONFIG").expect("Failed to get config")
 }
@@ -117,7 +122,7 @@ fn main() {
     rerun_if_env_changed("ALOXIDE_RUBY_VERSION");
     rerun_if_env_changed("ALOXIDE_STATIC_RUBY");
 
-    let static_lib = env::var_os("ALOXIDE_STATIC_RUBY").is_some();
+    let static_lib = has_env("ALOXIDE_STATIC_RUBY");
 
     let ruby = match (Driver::get(), ruby_version()) {
         (Some(driver), version) => {
