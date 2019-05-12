@@ -33,6 +33,7 @@ cache:
 
 before_install:
 - ./scripts/install_ruby.sh
+- rvm set "$ALOXIDE_RUBY_VERSION"
 before_script:
 - cargo -Vv
 - rustc -Vv
