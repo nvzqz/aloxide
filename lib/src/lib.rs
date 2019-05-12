@@ -202,6 +202,26 @@ impl Ruby {
         Ok(ruby)
     }
 
+    /// Creates a new instance from the `ruby` binary installed via
+    /// [`rvm`](https://github.com/rvm/rvm).
+    #[inline]
+    pub fn from_rvm(version: &Version) -> Result<Ruby, RubyVersionError> {
+        Ruby::from_cmd(Command::new("rvm")
+            .arg(version.to_string())
+            .arg("do")
+            .arg("ruby"))
+    }
+
+    /// Creates a new instance from the `ruby` binary installed via
+    /// [`rbenv`](https://github.com/rbenv/rbenv).
+    #[inline]
+    pub fn from_rbenv(version: &Version) -> Result<Ruby, RubyVersionError> {
+        Ruby::from_cmd(Command::new("rbenv")
+            .env("RBENV_VERSION", version.to_string())
+            .arg("exec")
+            .arg("ruby"))
+    }
+
     /// Returns the Ruby version.
     #[inline]
     pub fn version(&self) -> &Version {

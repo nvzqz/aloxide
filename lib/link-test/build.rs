@@ -3,7 +3,7 @@ extern crate aloxide;
 use std::env;
 use std::ffi::OsStr;
 use std::path::PathBuf;
-use std::process::{Command, Stdio};
+use std::process::Stdio;
 use aloxide::{Ruby, RubySrc, Version};
 
 // An external driver that manages the Ruby installation
@@ -28,16 +28,10 @@ impl Driver {
     fn ruby(self, version: &Version) -> Ruby {
         match self {
             Driver::Rvm => {
-                Ruby::from_cmd(Command::new("rvm")
-                    .arg(version.to_string())
-                    .arg("do")
-                    .arg("ruby")).expect("Could not execute `rvm`")
+                Ruby::from_rvm(version).expect("Could not execute `rvm`")
             },
             Driver::Rbenv => {
-                Ruby::from_cmd(Command::new("rbenv")
-                    .env("RBENV_VERSION", version.to_string())
-                    .arg("exec")
-                    .arg("ruby")).expect("Could not execute `rbenv`")
+                Ruby::from_rbenv(version).expect("Could not execute `rbenv`")
             },
         }
     }
