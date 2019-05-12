@@ -1,12 +1,10 @@
 #!/usr/bin/env bash
 
+set -e
+
 function error() {
     >&2 echo "$@"
     exit 1
-}
-
-function check() {
-    hash $1 || error "'$1' is not installed"
 }
 
 [[ -n "$ALOXIDE_RUBY_VERSION" ]] || error "Specify Ruby version via 'ALOXIDE_RUBY_VERSION'"
@@ -20,17 +18,11 @@ else
 fi
 
 if [[ -n "$ALOXIDE_USE_RVM" ]]; then
-    check rvm
     echo "Installing Ruby $ALOXIDE_RUBY_VERSION via 'rvm'..."
-    rvm use "$ALOXIDE_RUBY_VERSION" --install "$CONFIGURE_OPTS"
+    rvm install "$ALOXIDE_RUBY_VERSION" --no-docs "$CONFIGURE_OPTS"
 elif [[ -n "$ALOXIDE_USE_RBENV" ]]; then
-    check rbenv
     echo "Installing Ruby $ALOXIDE_RUBY_VERSION via 'rbenv'..."
-
-    if ! rbenv local "$ALOXIDE_RUBY_VERSION"; then
-        rbenv install "$ALOXIDE_RUBY_VERSION"
-        rbenv local "$ALOXIDE_RUBY_VERSION"
-    fi
+    rbenv install -s "$ALOXIDE_RUBY_VERSION"
 else
     error "Neither 'ALOXIDE_USE_RVM' nor 'ALOXIDE_USE_RBENV' set in environment"
 fi
