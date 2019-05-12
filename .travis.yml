@@ -40,6 +40,7 @@ cache:
   - $HOME/.cargo
   - $HOME/.rvm
   - $ALOXIDE_RUBY_CACHE
+  - $CARGO_TARGET_DIR
 
 before_install:
 - ./scripts/install_ruby.sh
@@ -49,3 +50,5 @@ before_script:
 - rvm "$ALOXIDE_RUBY_VERSION" do ruby -e "require 'pp'; pp RbConfig::CONFIG"
 script:
 - cargo test --all
+before_cache:
+- cargo clean -v -p aloxide
