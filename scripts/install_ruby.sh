@@ -9,10 +9,6 @@ function check() {
     hash $1 || error "'$1' is not installed"
 }
 
-function suppress() {
-    "$@" > /dev/null 2>&1
-}
-
 [[ -n "$ALOXIDE_RUBY_VERSION" ]] || error "Specify Ruby version via 'ALOXIDE_RUBY_VERSION'"
 
 if [[ -n "$ALOXIDE_STATIC_RUBY" ]]; then
@@ -26,16 +22,12 @@ fi
 if [[ -n "$ALOXIDE_USE_RVM" ]]; then
     check rvm
     echo "Installing Ruby $ALOXIDE_RUBY_VERSION via 'rvm'..."
-
-    if ! suppress rvm use "$ALOXIDE_RUBY_VERSION"; then
-        rvm install "$CONFIGURE_OPTS" "$ALOXIDE_RUBY_VERSION"
-        rvm use "$ALOXIDE_RUBY_VERSION"
-    fi
+    rvm use "$ALOXIDE_RUBY_VERSION" --install "$CONFIGURE_OPTS"
 elif [[ -n "$ALOXIDE_USE_RBENV" ]]; then
     check rbenv
     echo "Installing Ruby $ALOXIDE_RUBY_VERSION via 'rbenv'..."
 
-    if ! suppress rbenv local "$ALOXIDE_RUBY_VERSION"; then
+    if ! rbenv local "$ALOXIDE_RUBY_VERSION"; then
         rbenv install "$ALOXIDE_RUBY_VERSION"
         rbenv local "$ALOXIDE_RUBY_VERSION"
     fi
