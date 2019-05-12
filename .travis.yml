@@ -28,6 +28,7 @@ env:
 cache:
   directories:
   - $HOME/.cargo
+  - $HOME/.rvm
   - $ALOXIDE_RUBY_CACHE
 
 before_install:
