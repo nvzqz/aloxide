@@ -2,8 +2,6 @@ extern crate aloxide;
 
 use std::env;
 use std::ffi::OsStr;
-use std::fs::File;
-use std::io::Write;
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use aloxide::{Ruby, RubySrc, Version};
