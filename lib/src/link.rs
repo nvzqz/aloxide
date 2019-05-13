@@ -95,20 +95,16 @@ pub(crate) fn link(ruby: &Ruby, static_lib: bool) -> Result<(), RubyLinkError> {
         return Err(RubyLinkError::MissingLibs { static_lib });
     }
 
+    let libs = ruby.libs()?;
+    let main_libs = ruby.main_libs()?;
     let so_libs = ruby.so_libs()?;
-    let aux_libs = ruby.aux_libs(static_lib)?;
-
-    // TODO: `MAINLIBS` can be `nil` on Windows, and so `aux_libs()` should make
-    // use of `Option<String>` instead
-    let aux_libs = if aux_libs != "nil" {
-        aux_libs.as_str()
-    } else {
-        ""
-    };
 
     let mut dy_libs = HashSet::new();
-    dy_libs.extend(aux_libs.split_ascii_whitespace().map(lib_name));
-    dy_libs.extend(so_libs.split_ascii_whitespace().map(lib_name));
+    for libs in [&libs, &main_libs, &so_libs].iter() {
+        if *libs != "nil" {
+            dy_libs.extend(libs.split_ascii_whitespace().map(lib_name));
+        }
+    }
 
     let ruby_lib = ruby.lib_name(static_lib)?;
     if static_lib {
