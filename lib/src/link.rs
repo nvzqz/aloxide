@@ -63,7 +63,7 @@ fn os_helper(ruby: &Ruby, static_lib: bool) -> Result<(), RubyLinkError> {
     let so_path = ruby.lib_dir().join(&so_name);
 
     link_path.push(&so_name);
-    if !link_path.exists() {
+    if !std::fs::symlink_metadata(&link_path)?.file_type().is_symlink() {
         symlink(&so_path, link_path)?;
     }
 
