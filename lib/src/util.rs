@@ -4,6 +4,22 @@ use std::process::Command;
 use std::io;
 
 #[inline]
+pub fn memchr(needle: u8, haystack: &[u8]) -> Option<usize> {
+    #[cfg(feature = "memchr")]
+    return memchr::memchr(needle, haystack);
+
+    #[cfg(not(feature = "memchr"))]
+    {
+        for (i, &byte) in haystack.iter().enumerate() {
+            if byte == needle {
+                return Some(i);
+            }
+        }
+        None
+    }
+}
+
+#[inline]
 pub fn nmake(_target: &str) -> Option<Command> {
     // Requires statements since expressions can't have attributes
     #[cfg(target_os = "windows")]

@@ -2,9 +2,9 @@ use std::ffi::OsString;
 use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
-use memchr::memchr;
 use tar::{Archive as Tar, EntryType, Header};
 use bzip2::read::BzDecoder as Bz;
+use crate::util::memchr;
 
 /// A type that contains the contents of a `.tar.bz2` archive.
 ///

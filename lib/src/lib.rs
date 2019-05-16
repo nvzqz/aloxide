@@ -89,8 +89,6 @@
 
 #![deny(missing_docs)]
 
-extern crate memchr;
-
 #[cfg(target_os = "windows")]
 extern crate cc;
 
@@ -103,6 +101,9 @@ extern crate tar;
 extern crate dirs;
 #[cfg(feature = "download")]
 extern crate ureq;
+
+#[cfg(feature = "memchr")]
+extern crate memchr;
 
 use std::ffi::OsStr;
 use std::fmt::{self, Display};

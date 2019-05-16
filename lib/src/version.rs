@@ -257,7 +257,7 @@ impl VersionParser {
     /// Convert `s` into a `Version` based on the rules defined on `self`.
     pub fn parse(&self, mut s: &str) -> Result<Version, VersionParseError> {
         use VersionParseError::*;
-        use memchr::memchr;
+        use crate::util::memchr;
 
         fn split_at(s: &str, byte: u8) -> (&str, Option<&str>) {
             if let Some(index) = memchr(byte, s.as_bytes()) {
