@@ -25,7 +25,7 @@
 //!
 //! ```toml
 //! [build-dependencies]
-//! aloxide = "0.0.6"
+//! aloxide = "0.0.7"
 //! ```
 //!
 //! _or_ if you're mental and would like to be on the latest and... um greatest
