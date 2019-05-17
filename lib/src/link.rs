@@ -31,7 +31,7 @@ fn lib_name_msvc(lib_flag: &str) -> &str {
 fn os_helper(ruby: &Ruby, static_lib: bool) -> Result<(), RubyLinkError> {
     use std::env;
     use std::os::unix::fs::symlink;
-    use std::path::PathBuf;
+    use std::path::{Path, PathBuf};
 
     // Rust can't find and link to the Ruby's shared object ('.so') library when
     // linking dynamically and so we need to hold its hand by symlinking it into
@@ -62,8 +62,18 @@ fn os_helper(ruby: &Ruby, static_lib: bool) -> Result<(), RubyLinkError> {
     let so_name = format!("libruby.so.{}.{}", version.major, version.minor);
     let so_path = ruby.lib_dir().join(&so_name);
 
+    fn is_symlink(path: &Path) -> io::Result<bool> {
+        match std::fs::symlink_metadata(path) {
+            Ok(metadata) => Ok(metadata.file_type().is_symlink()),
+            Err(error) => match error.kind() {
+                io::ErrorKind::NotFound => Ok(false),
+                _ => Err(error),
+            },
+        }
+    }
+
     link_path.push(&so_name);
-    if !std::fs::symlink_metadata(&link_path)?.file_type().is_symlink() {
+    if !is_symlink(&link_path)? {
         symlink(&so_path, link_path)?;
     }
 
