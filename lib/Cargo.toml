@@ -1,6 +1,6 @@
 [package]
 name = "aloxide"
-version = "0.0.7"
+version = "0.0.8"
 edition = "2018"
 authors = ["Nikolai Vazquez"]
 readme = "README.md"
